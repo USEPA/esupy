@@ -1,3 +1,9 @@
+# remote.py (esupy)
+# !/usr/bin/env python3
+# coding=utf-8
+"""
+Functions for handling remote requests and parsing
+"""
 import logging as log
 import requests
 import requests_ftp
