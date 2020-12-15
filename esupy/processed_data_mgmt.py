@@ -26,23 +26,41 @@ def load_preprocessed_output(datafile, paths):
     """
     Loads a preprocessed file
     :param datafile: a data file name with any preceeding relative path
+    :param paths: instance of class Paths
     :return: a pandas dataframe of the datafile
     """
     local_file = os.path.realpath(paths.local_path + "/" + datafile)
     remote_file = paths.remote_path + datafile
-    try:
-        df = pd.read_parquet(local_file)
-        log.debug('Loading ' + datafile + ' from local repository')
-    except (OSError, FileNotFoundError):
-        # if parquet does not exist in local repo, read file from remote
+    if os.path.exists(local_file) & local_copy_is_current(datafile, paths):
+            log.debug('Loading ' + datafile + ' from local repository')
+            df = pd.read_parquet(local_file)
+    else:
         try:
-            log.debug(datafile + ' not found in local folder; loading from remote server...')
+            log.info(datafile + ' not found in local folder; loading from remote server...')
             df = pd.read_parquet(remote_file)
+            #Now write it to local
             df.to_parquet(local_file)
+            write_datafile_meta(datafile, paths)
             log.info(datafile + ' saved in ' + paths.local_path)
         except FileNotFoundError:
-            log.error("No file found for " + datafile + " in local or remote server")
+            log.error("No file found for " + datafile)
     return df
+
+def local_copy_is_current(datafile, path):
+    """
+    :param datafile:
+    :param path:
+    :return:
+    """
+    remote_time = get_file_update_time_from_DataCommons(datafile)
+    meta_file = define_metafile(datafile, path)
+    if os.path.exists(meta_file):
+        local_time = get_file_update_time_from_local(datafile, path)
+        if local_time >= remote_time:
+            return True
+        else:
+            return False
+    else: return False
 
 
 def get_file_update_time_from_DataCommons(datafile):
@@ -59,13 +77,13 @@ def get_file_update_time_from_DataCommons(datafile):
     file_upload_dt = dt.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S%z')
     return file_upload_dt
 
-def get_file_update_time_from_local(datafile):
+def get_file_update_time_from_local(datafile, paths):
     """
     Gets a datetime object for the metadata file in the local directory
     :param datafile: the file name to be searched for on local
     :return: a datetime object
     """
-    meta = read_datafile_meta(datafile)
+    meta = read_datafile_meta(datafile, paths)
     file_upload_dt = dt.datetime.strptime(meta["LastUpdated"], '%Y-%m-%d %H:%M:%S%z')
     return file_upload_dt
 
@@ -102,3 +120,13 @@ def define_metafile(datafile,paths):
     data = strip_file_extension(datafile)
     metafile = os.path.realpath(paths.local_path + "/" + data + '_metadata.json')
     return metafile
+
+def create_paths_if_missing(path):
+    """
+    Creates paths is missing. Paths are created recursivley by os.makedirs
+    :param path:
+    :return:
+    """
+    if not os.path.exists(path.local_path):
+     os.mkdirs(path.local_path)
+
