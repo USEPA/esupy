@@ -25,7 +25,7 @@ class Paths:
 def load_preprocessed_output(datafile, paths):
     """
     Loads a preprocessed file
-    :param datafile: a data file name with any preceeding relative path
+    :param datafile: a data file name with any preceeding relative file
     :param paths: instance of class Paths
     :return: a pandas dataframe of the datafile
     """
@@ -39,6 +39,7 @@ def load_preprocessed_output(datafile, paths):
             log.info(datafile + ' not found in local folder; loading from remote server...')
             df = pd.read_parquet(remote_file)
             #Now write it to local
+            create_paths_if_missing(local_file)
             df.to_parquet(local_file)
             write_datafile_meta(datafile, paths)
             log.info(datafile + ' saved in ' + paths.local_path)
@@ -54,13 +55,15 @@ def local_copy_is_current(datafile, path):
     """
     remote_time = get_file_update_time_from_DataCommons(datafile)
     meta_file = define_metafile(datafile, path)
+
     if os.path.exists(meta_file):
         local_time = get_file_update_time_from_local(datafile, path)
         if local_time >= remote_time:
             return True
         else:
             return False
-    else: return False
+    else:
+        return False
 
 
 def get_file_update_time_from_DataCommons(datafile):
@@ -111,9 +114,9 @@ def read_datafile_meta(datafile, paths):
         with open(metafile, 'r') as file:
             file_contents = file.read()
             metadata = json.loads(file_contents)
+        return metadata
     except FileNotFoundError:
         log.error("Local metadata file for " + datafile + " is missing.")
-    return metadata
 
 
 def define_metafile(datafile,paths):
@@ -121,12 +124,13 @@ def define_metafile(datafile,paths):
     metafile = os.path.realpath(paths.local_path + "/" + data + '_metadata.json')
     return metafile
 
-def create_paths_if_missing(path):
+def create_paths_if_missing(file):
     """
     Creates paths is missing. Paths are created recursivley by os.makedirs
-    :param path:
+    :param file:
     :return:
     """
-    if not os.path.exists(path.local_path):
-     os.mkdirs(path.local_path)
+    dir = os.path.dirname(file)
+    if not os.path.exists(dir):
+        os.makedirs(dir)
 
