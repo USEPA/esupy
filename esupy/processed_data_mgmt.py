@@ -26,16 +26,25 @@ class FileMeta:
 def load_preprocessed_output(file_meta, paths):
     """
     Loads a preprocessed file
-    :param datafile: a data file name with any preceeding relative file
+    :param file_meta: populated instance of class FileMeta
     :param paths: instance of class Paths
-    :return: a pandas dataframe of the datafile
+    :return: a pandas dataframe of the datafile if exists or None if it doesn't exist
     """
     f = find_file(file_meta,paths)
-    df = read_into_df(f)
-    return df
-
+    if os.path.exists(f):
+        df = read_into_df(f)
+        return df
+    else:
+        return None
 
 def find_file(meta,paths,force_version=False):
+    """
+    Searches for file within path.local_path based on file metadata
+    :param meta: populated instance of class FileMeta
+    :param paths: populated instance of class Paths
+    :param force_version: boolean on whether or not to include version number in search
+    :return: str with the file path if found, otherwise an empty string
+    """
     path = os.path.realpath(paths.local_path + "/" + meta.category)
     if os.path.exists(path):
         fs = os.listdir(path)
@@ -43,19 +52,21 @@ def find_file(meta,paths,force_version=False):
         #Get a list of all matching files
         r = list(filter(lambda x: re.search(search_words, x), fs))
         if len(r)==0:
-            return FileNotFoundError
+            f = ""
         elif len(r)>1:
             f = os.path.realpath(path + "/" + r[0])
-            return f
         else:
             f = os.path.realpath(path + "/" + r[0])
-            return f
+    else:
+        f = ""
+    return f
+
 
 def read_into_df(file):
     """
     Based on a file extension use the appropriate function to read in file
-    :param file:
-    :return:
+    :param file: str with a file path
+    :return: a pandas dataframe with the file data if extension is handled, else an error
     """
     name,ext = os.path.splitext(file)
     if ext==".parquet":
