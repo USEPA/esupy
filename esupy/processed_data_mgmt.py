@@ -78,7 +78,7 @@ def write_df_to_file(df,paths,meta):
     :return: None
     """
     folder = os.path.realpath(paths.local_path + "/" + meta.category)
-    file = folder + "/" + meta.name_data + "_" + meta.tool_version
+    file = folder + "/" + meta.name_data + "_v" + meta.tool_version
     if meta.git_hash is not None:
         file = file + "_" + meta.git_hash
     try:
