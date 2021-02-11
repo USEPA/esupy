@@ -2,127 +2,119 @@
 # !/usr/bin/env python3
 # coding=utf-8
 """
-Functions to manage querying, retrieving and storing preprocessed data in both local directories
-and on a remote data server. The functions also write a JSON file in the form
-of a dictionary with metadata corresponding to the processed data, including the LastUpdated time
-on the remote server.
-Currently only valid for the EPA Data Commons remote server, and assumes parquet format
+Functions to manage querying, retrieving and storing of preprocessed data in local directories
 """
-import datetime as dt
-import json
 import logging as log
 import os
 import pandas as pd
-from esupy.remote import make_http_request
-from esupy.util import strip_file_extension
+import re
+#from esupy.remote import make_http_request
+from esupy.util import supported_ext
 import appdirs
 
 
 class Paths:
     local_path = appdirs.user_data_dir()
-    remote_path = ""
 
-def load_preprocessed_output(datafile, paths):
+
+class FileMeta:
+    tool = ""
+    category = ""
+    name_data = ""
+    tool_version = ""
+    git_hash = ""
+    ext = ""
+
+
+def load_preprocessed_output(file_meta, paths):
     """
     Loads a preprocessed file
-    :param datafile: a data file name with any preceeding relative file
+    :param file_meta: populated instance of class FileMeta
     :param paths: instance of class Paths
-    :return: a pandas dataframe of the datafile
+    :return: a pandas dataframe of the datafile if exists or None if it doesn't exist
     """
-    local_file = os.path.realpath(paths.local_path + "/" + datafile)
-    remote_file = paths.remote_path + datafile
-    if os.path.exists(local_file) & local_copy_is_current(datafile, paths):
-            log.debug('Loading ' + datafile + ' from local repository')
-            df = pd.read_parquet(local_file)
+    f = find_file(file_meta,paths)
+    if os.path.exists(f):
+        df = read_into_df(f)
+        return df
     else:
-        try:
-            log.info(datafile + ' not found in local folder; loading from remote server...')
-            df = pd.read_parquet(remote_file)
-            #Now write it to local
-            create_paths_if_missing(local_file)
-            df.to_parquet(local_file)
-            write_datafile_meta(datafile, paths)
-            log.info(datafile + ' saved in ' + paths.local_path)
-        except FileNotFoundError:
-            log.error("No file found for " + datafile)
-    return df
+        return None
 
-def local_copy_is_current(datafile, path):
-    """
-    :param datafile:
-    :param path:
-    :return:
-    """
-    remote_time = get_file_update_time_from_DataCommons(datafile)
-    meta_file = define_metafile(datafile, path)
 
-    if os.path.exists(meta_file):
-        local_time = get_file_update_time_from_local(datafile, path)
-        if local_time >= remote_time:
-            return True
+def find_file(meta,paths,force_version=False):
+    """
+    Searches for file within path.local_path based on file metadata
+    :param meta: populated instance of class FileMeta
+    :param paths: populated instance of class Paths
+    :param force_version: boolean on whether or not to include version number in search
+    :return: str with the file path if found, otherwise an empty string
+    """
+    path = os.path.realpath(paths.local_path + "/" + meta.category)
+    if os.path.exists(path):
+        fs = os.listdir(path)
+        search_words = meta.name_data
+        #Get a list of all matching files
+        r = list(filter(lambda x: re.search(search_words, x), fs))
+        #Filter by extensions using common supported_ext
+        #r = list(filter(lambda x: re.search(supported_ext, x), r))
+        if len(r)==0:
+            f = ""
+        elif len(r)>1:
+            #temporary selection to grab the first file in the list
+            f = os.path.realpath(path + "/" + r[0])
         else:
-            return False
+            f = os.path.realpath(path + "/" + r[0])
     else:
-        return False
+        f = ""
+    return f
 
 
-def get_file_update_time_from_DataCommons(datafile):
+def write_df_to_file(df,paths,meta):
     """
-    Gets a datetime object for the file on the DataCommons server
-    :param datafile: the file name to be searched on the remote
-    :return: a datetime object
-    """
-    base_url = "https://xri9ebky5b.execute-api.us-east-1.amazonaws.com/api/?"
-    search_param = "searchvalue"
-    url = base_url + search_param + "=" + datafile + "&place=&searchfields=filename"
-    r = make_http_request(url)
-    date_str = r.json()[0]["LastModified"]
-    file_upload_dt = dt.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S%z')
-    return file_upload_dt
-
-def get_file_update_time_from_local(datafile, paths):
-    """
-    Gets a datetime object for the metadata file in the local directory
-    :param datafile: the file name to be searched for on local
-    :return: a datetime object
-    """
-    meta = read_datafile_meta(datafile, paths)
-    file_upload_dt = dt.datetime.strptime(meta["LastUpdated"], '%Y-%m-%d %H:%M:%S%z')
-    return file_upload_dt
-
-def write_datafile_meta(datafile, paths):
-    """
-    Writes a JSON file with metadata for processed data
-    :param datafile: the file to be created on local
+    Writes a data frame to the designated local folder and file name created using paths and meta
+    :param df: a pandas dataframe
+    :param paths: populated instance of class Paths
+    :param meta: populated instance of class FileMeta
     :return: None
     """
-    file_upload_dt = get_file_update_time_from_DataCommons(datafile)
-    d = {}
-    d["LastUpdated"] = format(file_upload_dt)
-    metafile = define_metafile(datafile,paths)
-    with open(metafile, 'w') as file:
-        file.write(json.dumps(d))
-
-def read_datafile_meta(datafile, paths):
-    """
-    Reads local JSON metadata file
-    :param datafile: the file to be read on local
-    :return: JSON metadata file
-    """
-    metafile = define_metafile(datafile, paths)
+    folder = os.path.realpath(paths.local_path + "/" + meta.category)
+    file = folder + "/" + meta.name_data + "_" + meta.tool_version
+    if meta.git_hash is not None:
+        file = file + "_" + meta.git_hash
     try:
-        with open(metafile, 'r') as file:
-            file_contents = file.read()
-            metadata = json.loads(file_contents)
-        return metadata
-    except FileNotFoundError:
-        log.error("Local metadata file for " + datafile + " is missing.")
+        create_paths_if_missing(file)
+        if meta.ext=="parquet":
+            file = file + ".parquet"
+            file = os.path.realpath(file)
+            df.to_parquet(file, engine="pyarrow")
+        elif meta.ext == "csv":
+            file = file + ".csv"
+            file = os.path.realpath(file)
+            df.to_csv(file, index=False)
+        else:
+            log.error('Failed to save ' + file + '. ' + "Meta data lacks 'ext' property")
+    except:
+        log.error('Failed to save '+ file + '.')
 
+def read_into_df(file):
+    """
+    Based on a file extension use the appropriate function to read in file
+    :param file: str with a file path
+    :return: a pandas dataframe with the file data if extension is handled, else an error
+    """
+    name,ext = os.path.splitext(file)
+    if ext==".parquet":
+        df = pd.read_parquet(file)
+    elif ext==".csv":
+        df = pd.read_csv(file)
+    else:
+        log.error("No reader specified for extension"+ext)
+    return df
 
-def define_metafile(datafile,paths):
-    data = strip_file_extension(datafile)
-    metafile = os.path.realpath(paths.local_path + "/" + data + '_metadata.json')
-    return metafile
+#def define_metafile(datafile,paths):
+#    data = strip_file_extension(datafile)
+#    metafile = os.path.realpath(paths.local_path + "/" + data + '_metadata.json')
+#    return metafile
 
 def create_paths_if_missing(file):
     """
@@ -133,4 +125,3 @@ def create_paths_if_missing(file):
     dir = os.path.dirname(file)
     if not os.path.exists(dir):
         os.makedirs(dir)
-

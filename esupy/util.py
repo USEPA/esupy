@@ -4,6 +4,9 @@
 """
 Simple utility functions for reuse in tools
 """
+supported_ext = ["parquet","csv"]
+
+
 def strip_file_extension(filename):
     """
     Simple function to strip file extension identified by last . in file name
