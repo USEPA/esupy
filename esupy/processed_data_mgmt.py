@@ -41,9 +41,10 @@ def load_preprocessed_output(file_meta, paths):
         return None
 
 
-def find_file(meta,paths,force_version=False):
+def find_file(meta,paths):
     """
-    Searches for file within path.local_path based on file metadata
+    Searches for file within path.local_path based on file metadata, if metadata matches,
+     returns most recently created file name
     :param meta: populated instance of class FileMeta
     :param paths: populated instance of class Paths
     :param force_version: boolean on whether or not to include version number in search
@@ -51,19 +52,26 @@ def find_file(meta,paths,force_version=False):
     """
     path = os.path.realpath(paths.local_path + "/" + meta.category)
     if os.path.exists(path):
-        fs = os.listdir(path)
         search_words = meta.name_data
-        #Get a list of all matching files
-        r = list(filter(lambda x: re.search(search_words, x), fs))
-        #Filter by extensions using common supported_ext
-        #r = list(filter(lambda x: re.search(supported_ext, x), r))
-        if len(r)==0:
+        fs = {}
+        for f in os.scandir(path):
+            name = f.name
+            # get file creation time
+            st = f.stat().st_ctime
+            fs[name]=st
+            matches = []
+            for k in fs.keys():
+                if re.search(search_words, k):
+                    matches.append(k)
+        if len(matches) == 0:
             f = ""
-        elif len(r)>1:
-            #temporary selection to grab the first file in the list
-            f = os.path.realpath(path + "/" + r[0])
         else:
-            f = os.path.realpath(path + "/" + r[0])
+            # Filter the dict by matches
+            r = {k:v for k,v in fs.items() if k in matches}
+            # Sort the dict by matches, return a list
+            #r = {k:v for k,v in sorted(r.items(), key=lambda item: item[1], reverse=True)}
+            rl = [k for k,v in sorted(r.items(), key=lambda item: item[1], reverse=True)]
+            f = rl[1]
     else:
         f = ""
     return f
@@ -125,3 +133,4 @@ def create_paths_if_missing(file):
     dir = os.path.dirname(file)
     if not os.path.exists(dir):
         os.makedirs(dir)
+
