@@ -71,7 +71,7 @@ def find_file(meta,paths):
             # Sort the dict by matches, return a list
             #r = {k:v for k,v in sorted(r.items(), key=lambda item: item[1], reverse=True)}
             rl = [k for k,v in sorted(r.items(), key=lambda item: item[1], reverse=True)]
-            f = rl[1]
+            f = os.path.realpath(path + "/" + rl[0])
     else:
         f = ""
     return f
