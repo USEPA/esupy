@@ -76,7 +76,8 @@ def find_file(meta,paths):
             matches = []
             for k in fs.keys():
                 if re.search(search_words, k):
-                    matches.append(k)
+                    if re.search(meta.ext, k):
+                        matches.append(k)                    
         if len(matches) == 0:
             f = ""
         else:
