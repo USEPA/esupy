@@ -41,17 +41,17 @@ def load_preprocessed_output(file_meta, paths):
         return None
 
 
-def get_version_number(pkg):
+def get_version_number(path):
     """
     Return the package version number from setup.py
-    :param pkg: str of package to obtain version number
+    :param path: str of path to package to obtain version number
     :return: str of version number
     """
 
-    content = open(os.path.dirname(os.path.abspath(pkg)).replace('\\', '/') + '/setup.py').read()
+    content = open(os.path.dirname(os.path.abspath(path)).replace('\\', '/') + '/setup.py').read()
     # parses the version number by removing the quotation marks e.g. version="1.0.0"
     v = content.partition("version=")[2].partition(",")[0][1:-1]
-    
+
     return v
 
 
