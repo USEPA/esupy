@@ -41,20 +41,6 @@ def load_preprocessed_output(file_meta, paths):
         return None
 
 
-def get_version_number(path):
-    """
-    Return the package version number from setup.py
-    :param path: str of path to package to obtain version number
-    :return: str of version number
-    """
-
-    content = open(os.path.dirname(os.path.abspath(path)).replace('\\', '/') + '/setup.py').read()
-    # parses the version number by removing the quotation marks e.g. version="1.0.0"
-    v = content.partition("version=")[2].partition(",")[0][1:-1]
-
-    return v
-
-
 def find_file(meta,paths):
     """
     Searches for file within path.local_path based on file metadata, if metadata matches,
