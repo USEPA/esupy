@@ -8,22 +8,27 @@ import logging as log
 import os
 import pandas as pd
 import re
+import json
 #from esupy.remote import make_http_request
 from esupy.util import supported_ext
 import appdirs
 
 
 class Paths:
-    local_path = appdirs.user_data_dir()
+    def __init__(self):
+        self.local_path = appdirs.user_data_dir()
 
 
 class FileMeta:
-    tool = ""
-    category = ""
-    name_data = ""
-    tool_version = ""
-    git_hash = ""
-    ext = ""
+    def __init__(self):
+        self.tool = ""
+        self.category = ""
+        self.name_data = ""
+        self.tool_version = ""
+        self.git_hash = ""
+        self.ext = ""
+        self.tool_meta = ""
+
 
 
 def load_preprocessed_output(file_meta, paths):
@@ -124,6 +129,17 @@ def read_into_df(file):
 #    data = strip_file_extension(datafile)
 #    metafile = os.path.realpath(paths.local_path + "/" + data + '_metadata.json')
 #    return metafile
+
+def write_metadata_to_file(paths, meta):
+    """
+    Writes the metadata of class FileMeta to JSON
+    :param paths: populated instance of class Paths
+    :param meta: populated instance of class FileMeta
+    """
+    folder = os.path.realpath(paths.local_path + "/" + meta.category)
+    file = folder + "/" + meta.name_data + '_metadata.json'
+    with open(file, 'w') as file:
+        file.write(json.dumps(meta.__dict__, indent = 4))
 
 def create_paths_if_missing(file):
     """
