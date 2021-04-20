@@ -67,7 +67,7 @@ def find_file(meta,paths):
             matches = []
             for k in fs.keys():
                 if re.search(search_words, k):
-                    if re.search(meta.ext, k):
+                    if re.search(meta.ext, k, re.IGNORECASE):
                         matches.append(k)                    
         if len(matches) == 0:
             f = ""
@@ -117,6 +117,7 @@ def read_into_df(file):
     :return: a pandas dataframe with the file data if extension is handled, else an error
     """
     name,ext = os.path.splitext(file)
+    ext = ext.lower()
     if ext==".parquet":
         df = pd.read_parquet(file)
     elif ext==".csv":
