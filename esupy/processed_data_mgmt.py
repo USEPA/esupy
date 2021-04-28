@@ -9,7 +9,7 @@ import os
 import pandas as pd
 import re
 import json
-#from esupy.remote import make_http_request
+from esupy.remote import make_http_request
 from esupy.util import supported_ext
 import appdirs
 
@@ -17,6 +17,7 @@ import appdirs
 class Paths:
     def __init__(self):
         self.local_path = appdirs.user_data_dir()
+        self.remote_path = 'https://edap-ord-data-commons.s3.amazonaws.com/'
 
 
 class FileMeta:
@@ -28,7 +29,6 @@ class FileMeta:
         self.git_hash = ""
         self.ext = ""
         self.tool_meta = ""
-
 
 
 def load_preprocessed_output(file_meta, paths):
@@ -45,6 +45,22 @@ def load_preprocessed_output(file_meta, paths):
     else:
         return None
 
+
+def download_from_remote(meta, paths):
+    """
+    Downloads a preprocessed file from remote and stores locally
+    :param file_meta: populated instance of class FileMeta
+    :param paths: instance of class Paths
+    """   
+    url = paths.remote_path + meta.tool + '/' + meta.category +\
+        '/' + meta.name_data + '.' + meta.ext
+    r = make_http_request(url)
+    
+    folder = os.path.realpath(paths.local_path + '/' + meta.category)
+    file = folder + "/" + meta.name_data + '.' + meta.ext
+    create_paths_if_missing(folder)
+    with open(file, 'wb') as f:
+        f.write(r.content)
 
 def find_file(meta,paths):
     """
