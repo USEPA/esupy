@@ -74,6 +74,7 @@ def find_file(meta,paths):
     path = os.path.realpath(paths.local_path + "/" + meta.category)
     if os.path.exists(path):
         search_words = meta.name_data
+        matches = []
         fs = {}
         for f in os.scandir(path):
             name = f.name
