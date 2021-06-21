@@ -77,3 +77,29 @@ def _return_bound_key(indicator):
         return dqi_dict[indicator]
     return None
 
+def get_weighted_average(df, data_col, weight_col, agg_cols):
+    """
+    Generates a weighted average result as a series based on passed columns
+    and the dataframe prior to aggregation
+    param df: Dataframe prior to aggregating from which a weighted average
+        is calculated
+    param data_col : str, Name of column to be averaged.
+    param weight_col : str, Name of column to serve as the weighting.
+    param agg_col : list, List of columns on which the dataframe is aggregated.
+    returns result : series reflecting the weighted average values for the
+        data_col, at length consistent with the aggregated dataframe, to be
+        reapplied to the data_col in the aggregated dataframe.
+    
+    e.g. 
+    df_agg = df.groupby(agg_cols).agg({weight_col: ['sum']})
+    df_agg[data_col] = get_weighted_average(df, data_col,
+                                            weight_col, agg_cols)
+    """
+
+    df = df.assign(_data_times_weight=df[data_col] * df[weight_col])
+    df = df.assign(_weight_where_notnull=df[weight_col] * pd.notnull(df[data_col]))
+    g = df.groupby(agg_cols)
+    wt_avg = g['_data_times_weight'].sum() / g['_weight_where_notnull'].sum()
+    del df['_data_times_weight'], df['_weight_where_notnull']
+    return wt_avg
+
