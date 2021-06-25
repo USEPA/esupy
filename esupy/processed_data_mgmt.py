@@ -62,6 +62,35 @@ def download_from_remote(meta, paths):
     with open(file, 'wb') as f:
         f.write(r.content)
 
+
+def remove_extra_files(file_meta, paths):
+    """
+    Removes all but the most recent file within paths.local_path based on
+    file metadata. Does not discern by version number
+    :param file_meta: populated instance of class FileMeta
+    :param paths: populated instance of class Paths
+    """
+    path = os.path.realpath(paths.local_path + "/" + file_meta.category)
+    if not(os.path.exists(path)):
+        return
+    fs = {}
+    file_name = file_meta.name_data + "_v"
+    for f in os.scandir(path):
+        name = f.name
+        # get file creation time
+        st = f.stat().st_ctime
+        if name.startswith(file_name):
+            fs[name]=st
+    keep = max(fs, key=fs.get)
+    log.debug("found %i files", len(fs))
+    count = 0
+    for f in fs.keys():
+        if f is not keep:
+            os.remove(path + "/" + f)
+            count +=1
+    log.debug("removed %i files", count)
+
+
 def find_file(meta,paths):
     """
     Searches for file within path.local_path based on file metadata, if metadata matches,
