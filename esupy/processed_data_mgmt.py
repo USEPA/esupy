@@ -52,15 +52,16 @@ def download_from_remote(meta, paths):
     :param file_meta: populated instance of class FileMeta
     :param paths: instance of class Paths
     """   
-    url = paths.remote_path + meta.tool + '/' + meta.category +\
-        '/' + meta.name_data + '.' + meta.ext
+    url = paths.remote_path + meta.tool + '/' 
+    if meta.category != '': url = url + meta.category + '/'
+    url = url + meta.name_data + '.' + meta.ext
     r = make_http_request(url)
-    
-    folder = os.path.realpath(paths.local_path + '/' + meta.category)
-    file = folder + "/" + meta.name_data + '.' + meta.ext
-    create_paths_if_missing(folder)
-    with open(file, 'wb') as f:
-        f.write(r.content)
+    if r is not None:
+        folder = os.path.realpath(paths.local_path + '/' + meta.category)
+        file = folder + "/" + meta.name_data + '.' + meta.ext
+        create_paths_if_missing(folder)
+        with open(file, 'wb') as f:
+            f.write(r.content)
 
 
 def remove_extra_files(file_meta, paths):
