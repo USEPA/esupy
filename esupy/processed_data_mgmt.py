@@ -131,6 +131,7 @@ def read_into_df(file):
 #    metafile = os.path.realpath(paths.local_path + "/" + data + '_metadata.json')
 #    return metafile
 
+
 def write_metadata_to_file(paths, meta):
     """
     Writes the metadata of class FileMeta to JSON
@@ -138,9 +139,13 @@ def write_metadata_to_file(paths, meta):
     :param meta: populated instance of class FileMeta
     """
     folder = os.path.realpath(paths.local_path + "/" + meta.category)
-    file = folder + "/" + meta.name_data + '_metadata.json'
+    file = folder + "/" + meta.name_data + "_v" + meta.tool_version
+    if meta.git_hash is not None:
+        file = file + "_" + meta.git_hash
+    file = file + '_metadata.json'
     with open(file, 'w') as file:
         file.write(json.dumps(meta.__dict__, indent = 4))
+
 
 def create_paths_if_missing(file):
     """
