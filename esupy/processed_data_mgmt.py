@@ -146,6 +146,8 @@ def get_most_recent_from_index(file_name, category, paths):
     """Sorts the data commons index by most recent date and returns
     the matching file name"""
     file_df = get_data_commons_index(paths, category)
+    if file_df is None:
+        return None
     file_df = parse_data_commons_index(file_df)
     df = file_df[file_df['name']==file_name]
     if len(df) == 0:
@@ -246,7 +248,12 @@ def get_data_commons_index(paths, category):
     #wait to allow index to load
     time.sleep(5)
     table = driver.find_element_by_id('listing')
-    file_str = StringIO(table.text.split("../\n",1)[1])
+    try:
+        file_str = StringIO(table.text.split("../\n",1)[1])
+    except IndexError:
+        log.warn('Error in accessing index')
+        driver.close()
+        return None
     df = pd.read_csv(file_str, header=None, delim_whitespace=True,
                      names = ['last_modified','size','unit','file_name']
                      )
