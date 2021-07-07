@@ -9,10 +9,14 @@ import os
 import pandas as pd
 import re
 import json
+import appdirs
+import time
+from io import StringIO
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+
 from esupy.remote import make_http_request
 from esupy.util import supported_ext
-import appdirs
-
 
 class Paths:
     def __init__(self):
@@ -48,20 +52,28 @@ def load_preprocessed_output(file_meta, paths):
 
 def download_from_remote(meta, paths):
     """
-    Downloads a preprocessed file from remote and stores locally
+    Downloads a preprocessed file from remote and stores locally based on the
+    most recent instance of that file
     :param file_meta: populated instance of class FileMeta
     :param paths: instance of class Paths
     """   
-    url = paths.remote_path + meta.tool + '/' 
-    if meta.category != '': url = url + meta.category + '/'
-    url = url + meta.name_data + '.' + meta.ext
-    r = make_http_request(url)
-    if r is not None:
-        folder = os.path.realpath(paths.local_path + '/' + meta.category)
-        file = folder + "/" + meta.name_data + '.' + meta.ext
-        create_paths_if_missing(folder)
-        with open(file, 'wb') as f:
-            f.write(r.content)
+    category = meta.tool + '/'
+    if meta.category != '':
+        category = category + meta.category + '/'
+    url = paths.remote_path + category
+    file_name = get_most_recent_from_index(meta.name_data, category, paths)
+    if file_name is None:
+        log.info('%s not found in %s', meta.name_data, url)
+    else:
+        url = url + file_name
+        r = make_http_request(url)
+        if r is not None:
+            folder = os.path.realpath(paths.local_path + '/' + meta.category)
+            file = folder + "/" + file_name
+            create_paths_if_missing(folder)
+            with open(file, 'wb') as f:
+                f.write(r.content)
+            log.info('%s saved to %s', file_name, folder)
 
 
 def remove_extra_files(file_meta, paths):
@@ -128,6 +140,21 @@ def find_file(meta,paths):
     else:
         f = ""
     return f
+
+
+def get_most_recent_from_index(file_name, category, paths):
+    """Sorts the data commons index by most recent date and returns
+    the matching file name"""
+    file_df = get_data_commons_index(paths, category)
+    if file_df is None:
+        return None
+    file_df = parse_data_commons_index(file_df)
+    df = file_df[file_df['name']==file_name]
+    if len(df) == 0:
+        return None
+    else:
+        df  = df.sort_values(by='date', ascending=False).reset_index(drop=True)
+        return df['file_name'][0]
 
 
 def write_df_to_file(df,paths,meta):
@@ -203,4 +230,53 @@ def create_paths_if_missing(file):
     dir = os.path.dirname(file)
     if not os.path.exists(dir):
         os.makedirs(dir)
+
+
+def get_data_commons_index(paths, category):
+    """Returns a dataframe of files available on data commmons for the
+    particular category
+    :param paths: instance of class Path
+    :param category: str of the category to search e.g. 'flowsa/FlowByActivity'
+    :return: dataframe with 'date' and 'file_name' as fields
+    """
+    #category = 'flowsa/FlowByActivity/'
+    index_url = 'index.html?prefix='
+    url = paths.remote_path + index_url + category
+    
+    driver = webdriver.Chrome(ChromeDriverManager().install())
+    driver.get(url)
+    #wait to allow index to load
+    time.sleep(5)
+    table = driver.find_element_by_id('listing')
+    try:
+        file_str = StringIO(table.text.split("../\n",1)[1])
+    except IndexError:
+        log.warn('Error in accessing index')
+        driver.close()
+        return None
+    df = pd.read_csv(file_str, header=None, delim_whitespace=True,
+                     names = ['last_modified','size','unit','file_name']
+                     )
+    df.dropna(inplace = True)
+    df['date'] = pd.to_datetime(df['last_modified'],
+                                format = '%Y-%m-%dT%H:%M:%S')
+    df = df[['date','file_name']].reset_index(drop=True)
+    driver.close()
+    return df
+
+
+def parse_data_commons_index(df):
+    """Parse a df from data_commons_index into separate columns"""
+    df['ext'] = df['file_name'].str.rsplit(".", n=1, expand=True)[1]
+    df['file'] = df['file_name'].str.rsplit(".", n=1, expand=True)[0]
+    df['git_hash'] = df['file'].str.rsplit("_", n=1, expand=True)[1]
+    df['git_hash'].fillna('', inplace=True)
+    df.loc[df['git_hash'].map(len)!=7, 'git_hash'] = ''
+    df['name'] = df['file'].str.split("_v", n=1, expand=True)[0]
+    df['version'] = df['file'].str.split("_v", n=1, expand=True)[1].str.split(
+        "_", expand=True)[0]
+    df = df[['name','version','git_hash',
+             'ext','date', 'file_name']].reset_index(drop=True)
+    df.fillna('', inplace=True)
+    return df
 
