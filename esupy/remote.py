@@ -26,5 +26,6 @@ def make_http_request(url):
         r.raise_for_status()
     except requests.exceptions.HTTPError:
         log.error('Error in URL request!')
+        r = None
     return r
 
