@@ -6,6 +6,7 @@ Functions for processing and reporting life cycle data quality indicators
 """
 
 import pandas as pd
+import numpy as np
 
 
 temporal_correlation_to_dqi = {3: 1,
@@ -50,6 +51,21 @@ def apply_dqi_to_field(df, field, indicator, bound_to_dqi=None):
     if indicator in dqi_dict.keys():
         df[indicator] = apply_dqi_to_series(df[field], indicator,
                                             bound_to_dqi=bound_to_dqi)
+    return df
+
+def adjust_dqi_scores(df, source_series, indicator, bound_to_dqi=None):
+    """
+    Adjusts a data quality indicator field in a passed dataframe based
+    on dictionary applied to a source series. The dqi score is increased
+    for each value above 1 up to a maxium of 5
+    """
+    if bound_to_dqi is None:
+        bound_to_dqi = _return_bound_key(indicator)
+    source_series = pd.to_numeric(source_series, errors = 'coerce')
+    if (len(source_series) != len(df)):
+        print('check length')
+    df[indicator] = np.minimum((df[indicator] + apply_dqi_to_series(
+        source_series, indicator, bound_to_dqi) - 1), 5)
     return df
 
 def _lookup_score_with_bound_key(raw_score, bound_to_dqi):
