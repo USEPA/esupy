@@ -16,7 +16,7 @@ from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 
 from esupy.remote import make_http_request
-from esupy.util import supported_ext
+from esupy.util import supported_ext, strip_file_extension
 
 class Paths:
     def __init__(self):
@@ -223,14 +223,17 @@ def write_metadata_to_file(paths, meta):
 
 
 def read_source_metadata(paths, meta):
-    """return the locally saved metadata dictionary from JSON
+    """return the locally saved metadata dictionary from JSON,
+    meta should reflect the outputfile for which the metadata is associated
     
-    :param meta: object of class FileMeta
+    :param meta: object of class FileMeta used to load the outputfile
     :param paths: object of class Paths
     :return: metadata dictionary
     """
-    meta.ext = 'json'
     path = find_file(meta, paths)
+    # remove the extension from the file and add _metadata.json
+    path = strip_file_extension(path)
+    path = f'{path}_metadata.json'
     try:
         with open(path, 'r') as file:
             file_contents = file.read()
