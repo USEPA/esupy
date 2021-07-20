@@ -16,7 +16,7 @@ from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 
 from esupy.remote import make_http_request
-from esupy.util import supported_ext
+from esupy.util import supported_ext, strip_file_extension
 
 class Paths:
     def __init__(self):
@@ -32,6 +32,7 @@ class FileMeta:
         self.tool_version = ""
         self.git_hash = ""
         self.ext = ""
+        self.date_created = ""
         self.tool_meta = ""
 
 
@@ -220,6 +221,33 @@ def write_metadata_to_file(paths, meta):
     with open(file, 'w') as file:
         file.write(json.dumps(meta.__dict__, indent = 4))
 
+
+def read_source_metadata(paths, meta, force_JSON = False):
+    """return the locally saved metadata dictionary from JSON,
+    meta should reflect the outputfile for which the metadata is associated
+    
+    :param meta: object of class FileMeta used to load the outputfile
+    :param paths: object of class Paths
+    :param force_JSON: bool, searches based on named JSON instead of outputfile
+    :return: metadata dictionary
+    """
+    if force_JSON:
+        meta.ext = 'json'
+        path = find_file(meta, paths)
+    else:
+        path = find_file(meta, paths)
+        # remove the extension from the file and add _metadata.json
+        path = strip_file_extension(path)
+        path = f'{path}_metadata.json'
+    try:
+        with open(path, 'r') as file:
+            file_contents = file.read()
+            metadata = json.loads(file_contents)
+            return metadata
+    except FileNotFoundError:
+        log.warning("metadata not found for source data")
+        return None
+    
 
 def create_paths_if_missing(file):
     """
