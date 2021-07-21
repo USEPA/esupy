@@ -245,7 +245,7 @@ def read_source_metadata(paths, meta, force_JSON = False):
             metadata = json.loads(file_contents)
             return metadata
     except FileNotFoundError:
-        log.warning("metadata not found for source data")
+        log.warning("metadata not found for %s", meta.name_data)
         return None
     
 
