@@ -27,15 +27,18 @@ def is_git_directory(path = '.'):
                            stderr=subprocess.STDOUT,
                            stdout = open(os.devnull, 'w')) == 0
 
-def get_git_hash():
+def get_git_hash(length = 'short'):
     """
-    Returns 7 digit git_hash of current directory or None if no git found
+    Returns git_hash of current directory or None if no git found
+    :param length: str, 'short' for 7-digit, 'long' for full git hash
+    :return git_hash: str
     """
     git_hash = None
     if is_git_directory():
         try:
             git_hash = subprocess.check_output(
-                ['git', 'rev-parse', 'HEAD']).strip().decode(
-                'ascii')[0:7]
+                ['git', 'rev-parse', 'HEAD']).strip().decode('ascii')
+            if length == 'short':
+                git_hash = git_hash[0:7]
         except: pass
     return git_hash
