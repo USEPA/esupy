@@ -283,7 +283,7 @@ def get_data_commons_index(paths, category):
     df['date'] = pd.to_datetime(df['last_modified'],
                                 format = '%Y-%m-%dT%H:%M:%S')
     # Remove the category name and trailing slash from the file name
-    df['file_name'] = df['file_name'].str.replace(category+"/","")
+    df['file_name'] = df['file_name'].str.replace(category,"")
     # Reset the index and return
     df = df[['date','file_name']].reset_index(drop=True)
     return df
