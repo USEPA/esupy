@@ -10,13 +10,9 @@ import pandas as pd
 import re
 import json
 import appdirs
-import time
-from io import StringIO
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-
+import xml.etree.ElementTree as ET
 from esupy.remote import make_http_request
-from esupy.util import supported_ext, strip_file_extension
+from esupy.util import strip_file_extension
 
 class Paths:
     def __init__(self):
@@ -55,7 +51,7 @@ def download_from_remote(meta, paths):
     """
     Downloads a preprocessed file from remote and stores locally based on the
     most recent instance of that file
-    :param file_meta: populated instance of class FileMeta
+    :param meta: populated instance of class FileMeta
     :param paths: instance of class Paths
     """   
     category = meta.tool + '/'
@@ -111,7 +107,6 @@ def find_file(meta,paths):
      returns most recently created file name
     :param meta: populated instance of class FileMeta
     :param paths: populated instance of class Paths
-    :param force_version: boolean on whether or not to include version number in search
     :return: str with the file path if found, otherwise an empty string
     """
     path = os.path.realpath(paths.local_path + "/" + meta.category)
@@ -191,6 +186,7 @@ def read_into_df(file):
     :param file: str with a file path
     :return: a pandas dataframe with the file data if extension is handled, else an error
     """
+    df = pd.DataFrame()
     name,ext = os.path.splitext(file)
     ext = ext.lower()
     if ext==".parquet":
@@ -267,29 +263,29 @@ def get_data_commons_index(paths, category):
     :param category: str of the category to search e.g. 'flowsa/FlowByActivity'
     :return: dataframe with 'date' and 'file_name' as fields
     """
-    #category = 'flowsa/FlowByActivity/'
-    index_url = 'index.html?prefix='
+    index_url = '?prefix='
     url = paths.remote_path + index_url + category
-    
-    driver = webdriver.Chrome(ChromeDriverManager().install())
-    driver.get(url)
-    #wait to allow index to load
-    time.sleep(5)
-    table = driver.find_element_by_id('listing')
-    try:
-        file_str = StringIO(table.text.split("../\n",1)[1])
-    except IndexError:
-        log.warn('Error in accessing index')
-        driver.close()
-        return None
-    df = pd.read_csv(file_str, header=None, delim_whitespace=True,
-                     names = ['last_modified','size','unit','file_name']
-                     )
+    listing = make_http_request(url)
+    # Code to convert XML to pd df courtesy of
+    # https://stackabuse.com/reading-and-writing-xml-files-in-python-with-panda
+    contents = ET.XML(listing.text)
+    data = []
+    cols = []
+    for i, child in enumerate(contents):
+        data.append([subchild.text for subchild in child])
+        cols.append(child.tag)
+    df = pd.DataFrame(data)
     df.dropna(inplace = True)
+    # only get first two columns and rename them name and last modified
+    df = df[[0, 1]]
+    df.columns = ['file_name', 'last_modified']
+    # Reformat the date to a pd datetime
     df['date'] = pd.to_datetime(df['last_modified'],
                                 format = '%Y-%m-%dT%H:%M:%S')
+    # Remove the category name and trailing slash from the file name
+    df['file_name'] = df['file_name'].str.replace(category,"")
+    # Reset the index and return
     df = df[['date','file_name']].reset_index(drop=True)
-    driver.close()
     return df
 
 

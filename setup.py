@@ -8,7 +8,6 @@ setup(
                       'appdirs>=1.4.3',
                       'pandas>=1.1.0',
                       'requests_ftp>=0.3.1',
-                      'selenium>=3.141.0',
                       'pyarrow>=4.0.0'],
     url='http://github.com/usepa/esupy',
     license='CC0',
