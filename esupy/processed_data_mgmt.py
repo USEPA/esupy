@@ -69,9 +69,9 @@ def download_from_remote(meta, paths):
                 folder = os.path.realpath(paths.local_path + '/' + meta.category)
                 file = folder + "/" + f
                 create_paths_if_missing(file)
+                log.info('%s saved to %s', f, folder)
                 with open(file, 'wb') as f:
                     f.write(r.content)
-                log.info('%s saved to %s', f, folder)
 
 
 def remove_extra_files(file_meta, paths):
