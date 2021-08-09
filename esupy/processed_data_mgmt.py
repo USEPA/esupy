@@ -53,24 +53,25 @@ def download_from_remote(meta, paths):
     most recent instance of that file
     :param meta: populated instance of class FileMeta
     :param paths: instance of class Paths
-    """   
+    """
     category = meta.tool + '/'
     if meta.category != '':
         category = category + meta.category + '/'
-    url = paths.remote_path + category
+    base_url = paths.remote_path + category
     file_name = get_most_recent_from_index(meta.name_data, category, paths)
-    if file_name is None:
-        log.info('%s not found in %s', meta.name_data, url)
+    if file_name == []:
+        log.info('%s not found in %s', meta.name_data, base_url)
     else:
-        url = url + file_name
-        r = make_http_request(url)
-        if r is not None:
-            folder = os.path.realpath(paths.local_path + '/' + meta.category)
-            file = folder + "/" + file_name
-            create_paths_if_missing(folder)
-            with open(file, 'wb') as f:
-                f.write(r.content)
-            log.info('%s saved to %s', file_name, folder)
+        for f in file_name:
+            url = base_url + f
+            r = make_http_request(url)
+            if r is not None:
+                folder = os.path.realpath(paths.local_path + '/' + meta.category)
+                file = folder + "/" + f
+                create_paths_if_missing(file)
+                with open(file, 'wb') as f:
+                    f.write(r.content)
+                log.info('%s saved to %s', f, folder)
 
 
 def remove_extra_files(file_meta, paths):
@@ -139,8 +140,15 @@ def find_file(meta,paths):
 
 
 def get_most_recent_from_index(file_name, category, paths):
-    """Sorts the data commons index by most recent date and returns
-    the matching file name"""
+    """
+    Sorts the data commons index by most recent date and returns
+    the matching file name
+    :param file_name:
+    :param category:
+    :param paths:
+    :return: list, most recently created datafiles, metadata, log files
+    """
+
     file_df = get_data_commons_index(paths, category)
     if file_df is None:
         return None
@@ -150,7 +158,12 @@ def get_most_recent_from_index(file_name, category, paths):
         return None
     else:
         df  = df.sort_values(by='date', ascending=False).reset_index(drop=True)
-        return df['file_name'][0]
+        # select first file name in list, extract the file version and git hash,
+        # return list of files that include version/hash (to include metadata and log files)
+        recent_file = df['file_name'][0]
+        vh = "_".join(strip_file_extension(recent_file).replace(f'{file_name}_', '').split("_", 2)[:2])
+        df_sub = [string for string in df['file_name'] if vh in string]
+        return df_sub
 
 
 def write_df_to_file(df,paths,meta):
