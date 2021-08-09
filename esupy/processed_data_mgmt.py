@@ -162,7 +162,10 @@ def get_most_recent_from_index(file_name, category, paths):
         # return list of files that include version/hash (to include metadata and log files)
         recent_file = df['file_name'][0]
         vh = "_".join(strip_file_extension(recent_file).replace(f'{file_name}_', '').split("_", 2)[:2])
-        df_sub = [string for string in df['file_name'] if vh in string]
+        if vh != '':
+            df_sub = [string for string in df['file_name'] if vh in string]
+        else:
+            df_sub = [recent_file]
         return df_sub
 
 
