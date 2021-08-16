@@ -7,9 +7,6 @@ Functions to facilitate flow mapping from fedelemflowlist and material flow list
 import pandas as pd
 import logging as log
 
-import fedelemflowlist as fedefl
-import materialflowlist as mfl
-
 def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows = False,
                        field_dict = None):
     """
@@ -32,6 +29,7 @@ def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows = False,
         'FlowAmount','FlowUUID'
         
     """
+
     if field_dict is None:
         # Default field dictionary for mapping
         field_dict = {'FlowableName':'Flowable',
@@ -50,8 +48,10 @@ def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows = False,
                       "TargetFlowUUID"]
     
     if flow_type == 'ELEMENTARY_FLOW':
+        import fedelemflowlist as fedefl
         mapping = fedefl.get_flowmapping(source)
     else:
+        import materialflowlist as mfl
         mapping = mfl.get_flowmapping(source)
     if len(mapping) == 0:
         return None
