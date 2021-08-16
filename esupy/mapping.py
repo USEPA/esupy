@@ -5,7 +5,6 @@
 Functions to facilitate flow mapping from fedelemflowlist and material flow list
 """
 import pandas as pd
-import logging as log
 
 def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows = False,
                        field_dict = None):
