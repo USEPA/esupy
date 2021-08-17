@@ -7,7 +7,7 @@ Functions to facilitate flow mapping from fedelemflowlist and material flow list
 import pandas as pd
 
 def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows = False,
-                       field_dict = None):
+                       field_dict = None, ignore_source_name = False):
     """
     Maps a dataframe using a flow mapping file from fedelemflowlist or
     materialflowlist.
@@ -19,25 +19,30 @@ def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows = False,
     :param keep_unmaped_rows: bool, False if want unmapped rows
         dropped, True if want to retain
     :param field_dict: dictionary of field names in df containing the following keys:
+        'SourceName',
         'FlowableName',
         'FlowableUnit',
         'FlowableContext',
         'FlowableQuantity',
         'UUID'.
-        If None, uses the default fields of 'Flowable','Unit','Context',
-        'FlowAmount','FlowUUID'
+        If None, uses the default fields of 'SourceName','Flowable',
+        'Unit','Context','FlowAmount','FlowUUID'
+    :param ignore_source_name: bool, False if flows should be mapped based on
+        SourceName. (E.g., should be False when mapping across multiple datasets)
         
     """
 
     if field_dict is None:
         # Default field dictionary for mapping
-        field_dict = {'FlowableName':'Flowable',
+        field_dict = {'SourceName':'SourceName',
+                      'FlowableName':'Flowable',
                       'FlowableUnit':'Unit',
                       'FlowableContext':'Context',
                       'FlowableQuantity':'FlowAmount',
                       'UUID':'FlowUUID'}
     
-    mapping_fields = ["SourceFlowName",
+    mapping_fields = ["SourceListName",
+                      "SourceFlowName",
                       "SourceFlowContext",
                       "SourceUnit",
                       "ConversionFactor",
@@ -61,14 +66,25 @@ def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows = False,
         merge_type = 'inner'
     else:
         merge_type = 'left'
-    # merge df with flows
+
+    map_to = [field_dict['SourceName'],
+              field_dict['FlowableName'],
+              field_dict['FlowableContext'],
+              field_dict['FlowableUnit']]
+    
+    map_from = ["SourceListName",
+                "SourceFlowName",
+                "SourceFlowContext",
+                "SourceUnit"]
+    
+    if ignore_source_name:
+        map_to.remove(field_dict['SourceName'])
+        map_from.remove('SourceListName')
+    
+    # merge df with flows    
     mapped_df = pd.merge(df, mapping,
-                             left_on=[field_dict['FlowableName'],
-                                      field_dict['FlowableContext'],
-                                      field_dict['FlowableUnit']],
-                             right_on=["SourceFlowName",
-                                       "SourceFlowContext",
-                                       "SourceUnit"],
+                             left_on=map_to,
+                             right_on=map_from,
                              how=merge_type)
     
     criteria = mapped_df['TargetFlowName'].notnull()
