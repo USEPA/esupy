@@ -47,12 +47,14 @@ def load_preprocessed_output(file_meta, paths):
         return None
 
 
-def download_from_remote(meta, paths):
+def download_from_remote(meta, paths, **kwargs):
     """
     Downloads a preprocessed file from remote and stores locally based on the
     most recent instance of that file
     :param meta: populated instance of class FileMeta
     :param paths: instance of class Paths
+    :param kwargs: option to include 'subdirectory_dict', a dictionary that
+         directs local data storage location
     """
     category = meta.tool + '/'
     if meta.category != '':
@@ -66,7 +68,16 @@ def download_from_remote(meta, paths):
             url = base_url + f
             r = make_http_request(url)
             if r is not None:
-                folder = os.path.realpath(paths.local_path + '/' + meta.category)
+                # set subdirectory
+                subdirectory = meta.category
+                # if there is a dictionary with specific subdirectories
+                # based on end of filename, modify the subdirectory
+                if kwargs != {}:
+                    if 'subdirectory_dict' in kwargs:
+                        for k, v in kwargs['subdirectory_dict'].items():
+                            if f.endswith(k):
+                                subdirectory = v
+                folder = os.path.realpath(paths.local_path + '/' + subdirectory)
                 file = folder + "/" + f
                 create_paths_if_missing(file)
                 log.info('%s saved to %s', f, folder)
@@ -157,7 +168,7 @@ def get_most_recent_from_index(file_name, category, paths):
     if len(df) == 0:
         return None
     else:
-        df  = df.sort_values(by='date', ascending=False).reset_index(drop=True)
+        df = df.sort_values(by='date', ascending=False).reset_index(drop=True)
         # select first file name in list, extract the file version and git hash,
         # return list of files that include version/hash (to include metadata and log files)
         recent_file = df['file_name'][0]
