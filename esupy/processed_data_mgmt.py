@@ -292,8 +292,12 @@ def get_data_commons_index(paths, category):
         cols.append(child.tag)
     df = pd.DataFrame(data)
     df.dropna(inplace = True)
-    # only get first two columns and rename them name and last modified
-    df = df[[0, 1]]
+    try:
+        # only get first two columns and rename them name and last modified
+        df = df[[0, 1]]
+    except KeyError:
+        # no data found at url
+        return None
     df.columns = ['file_name', 'last_modified']
     # Reformat the date to a pd datetime
     df['date'] = pd.to_datetime(df['last_modified'],
