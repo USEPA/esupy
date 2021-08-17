@@ -300,9 +300,13 @@ def parse_data_commons_index(df):
     df['git_hash'] = df['file'].str.rsplit("_", n=1, expand=True)[1]
     df['git_hash'].fillna('', inplace=True)
     df.loc[df['git_hash'].map(len)!=7, 'git_hash'] = ''
-    df['name'] = df['file'].str.split("_v", n=1, expand=True)[0]
-    df['version'] = df['file'].str.split("_v", n=1, expand=True)[1].str.split(
-        "_", expand=True)[0]
+    try:
+        df['version'] = df['file'].str.split("_v", n=1, expand=True)[1].str.split(
+            "_", expand=True)[0]
+        df['name'] = df['file'].str.split("_v", n=1, expand=True)[0]
+    except KeyError:
+        df['version'] = ''
+        df['name'] = df['file']
     df = df[['name','version','git_hash',
              'ext','date', 'file_name']].reset_index(drop=True)
     df.fillna('', inplace=True)
