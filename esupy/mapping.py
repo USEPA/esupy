@@ -56,6 +56,7 @@ def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows = False,
         return None
     
     mapping = mapping[mapping_fields]    
+    mapping[['ConversionFactor']] = mapping[['ConversionFactor']].fillna(value=1)
     if keep_unmapped_rows is False:
         merge_type = 'inner'
     else:
