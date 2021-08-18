@@ -57,10 +57,9 @@ def download_from_remote(file_meta, paths, **kwargs):
     :param kwargs: option to include 'subdirectory_dict', a dictionary that
          directs local data storage location based on extension
     """
-    category = file_meta.tool + '/'
+    base_url = paths.remote_path + file_meta.tool + '/'
     if file_meta.category != '':
-        category = category + file_meta.category + '/'
-    base_url = paths.remote_path + category
+        base_url = base_url + file_meta.category + '/'
     files = get_most_recent_from_index(file_meta, paths)
     if files == []:
         log.info('%s not found in %s', file_meta.name_data, base_url)
@@ -160,12 +159,12 @@ def get_most_recent_from_index(file_meta, paths):
     :return: list, most recently created datafiles, metadata, log files
     """
 
-    file_df = get_data_commons_index(paths, file_meta.category)
+    file_df = get_data_commons_index(file_meta, paths)
     if file_df is None:
         return None
     file_df = parse_data_commons_index(file_df)
-    df = file_df[file_df['name']==file_meta.name_data]
-    df_ext = df[df['ext']==file_meta.extension]
+    df = file_df[file_df['name'].str.startswith(file_meta.name_data)]
+    df_ext = df[df['ext']==file_meta.ext]
     if len(df_ext) == 0:
         return None
     else:
@@ -285,15 +284,19 @@ def create_paths_if_missing(file):
         os.makedirs(dir)
 
 
-def get_data_commons_index(paths, category):
+def get_data_commons_index(file_meta, paths):
     """Returns a dataframe of files available on data commmons for the
     particular category
+    :param file_meta: instance of class FileMeta
     :param paths: instance of class Path
     :param category: str of the category to search e.g. 'flowsa/FlowByActivity'
     :return: dataframe with 'date' and 'file_name' as fields
     """
     index_url = '?prefix='
-    url = paths.remote_path + index_url + category
+    subdirectory = file_meta.tool + '/'
+    if file_meta.category != '':
+        subdirectory = subdirectory + file_meta.category + '/'
+    url = paths.remote_path + index_url + subdirectory
     listing = make_http_request(url)
     # Code to convert XML to pd df courtesy of
     # https://stackabuse.com/reading-and-writing-xml-files-in-python-with-panda
@@ -316,7 +319,7 @@ def get_data_commons_index(paths, category):
     df['date'] = pd.to_datetime(df['last_modified'],
                                 format = '%Y-%m-%dT%H:%M:%S')
     # Remove the category name and trailing slash from the file name
-    df['file_name'] = df['file_name'].str.replace(category,"")
+    df['file_name'] = df['file_name'].str.replace(subdirectory,"")
     # Reset the index and return
     df = df[['date','file_name']].reset_index(drop=True)
     return df
