@@ -47,30 +47,42 @@ def load_preprocessed_output(file_meta, paths):
         return None
 
 
-def download_from_remote(meta, paths):
+def download_from_remote(file_meta, paths, **kwargs):
     """
-    Downloads a preprocessed file from remote and stores locally based on the
-    most recent instance of that file
-    :param meta: populated instance of class FileMeta
+    Downloads one or more files from remote and stores locally based on the
+    most recent instance of that file. All files that share name_data, version, and
+    hash will be downloaded together.
+    :param file_meta: populated instance of class FileMeta
     :param paths: instance of class Paths
-    """   
-    category = meta.tool + '/'
-    if meta.category != '':
-        category = category + meta.category + '/'
-    url = paths.remote_path + category
-    file_name = get_most_recent_from_index(meta.name_data, category, paths)
-    if file_name is None:
-        log.info('%s not found in %s', meta.name_data, url)
+    :param kwargs: option to include 'subdirectory_dict', a dictionary that
+         directs local data storage location based on extension
+    """
+    base_url = paths.remote_path + file_meta.tool + '/'
+    if file_meta.category != '':
+        base_url = base_url + file_meta.category + '/'
+    files = get_most_recent_from_index(file_meta, paths)
+    if files == []:
+        log.info('%s not found in %s', file_meta.name_data, base_url)
     else:
-        url = url + file_name
-        r = make_http_request(url)
-        if r is not None:
-            folder = os.path.realpath(paths.local_path + '/' + meta.category)
-            file = folder + "/" + file_name
-            create_paths_if_missing(folder)
-            with open(file, 'wb') as f:
-                f.write(r.content)
-            log.info('%s saved to %s', file_name, folder)
+        for f in files:
+            url = base_url + f
+            r = make_http_request(url)
+            if r is not None:
+                # set subdirectory
+                subdirectory = file_meta.category
+                # if there is a dictionary with specific subdirectories
+                # based on end of filename, modify the subdirectory
+                if kwargs != {}:
+                    if 'subdirectory_dict' in kwargs:
+                        for k, v in kwargs['subdirectory_dict'].items():
+                            if f.endswith(k):
+                                subdirectory = v
+                folder = os.path.realpath(paths.local_path + '/' + subdirectory)
+                file = folder + "/" + f
+                create_paths_if_missing(file)
+                log.info('%s saved to %s', f, folder)
+                with open(file, 'wb') as f:
+                    f.write(r.content)
 
 
 def remove_extra_files(file_meta, paths):
@@ -138,19 +150,35 @@ def find_file(meta,paths):
     return f
 
 
-def get_most_recent_from_index(file_name, category, paths):
-    """Sorts the data commons index by most recent date and returns
-    the matching file name"""
-    file_df = get_data_commons_index(paths, category)
+def get_most_recent_from_index(file_meta, paths):
+    """
+    Sorts the data commons index by most recent date for the required extension 
+    and returns the matching files of that name that share the same version and hash
+    :param file_meta:
+    :param paths:
+    :return: list, most recently created datafiles, metadata, log files
+    """
+
+    file_df = get_data_commons_index(file_meta, paths)
     if file_df is None:
         return None
     file_df = parse_data_commons_index(file_df)
-    df = file_df[file_df['name']==file_name]
-    if len(df) == 0:
+    df = file_df[file_df['name'].str.startswith(file_meta.name_data)]
+    df_ext = df[df['ext']==file_meta.ext]
+    if len(df_ext) == 0:
         return None
     else:
-        df  = df.sort_values(by='date', ascending=False).reset_index(drop=True)
-        return df['file_name'][0]
+        df_ext = df_ext.sort_values(by='date', ascending=False).reset_index(drop=True)
+        # select first file name in list, extract the file version and git hash,
+        # return list of files that include version/hash (to include metadata and log files)
+        recent_file = df_ext['file_name'][0]
+        vh = "_".join(strip_file_extension(recent_file).replace(
+            f'{file_meta.name_data}_', '').split("_", 2)[:2])
+        if vh != '':
+            df_sub = [string for string in df['file_name'] if vh in string]
+        else:
+            df_sub = [recent_file]
+        return df_sub
 
 
 def write_df_to_file(df,paths,meta):
@@ -256,15 +284,19 @@ def create_paths_if_missing(file):
         os.makedirs(dir)
 
 
-def get_data_commons_index(paths, category):
+def get_data_commons_index(file_meta, paths):
     """Returns a dataframe of files available on data commmons for the
     particular category
+    :param file_meta: instance of class FileMeta
     :param paths: instance of class Path
     :param category: str of the category to search e.g. 'flowsa/FlowByActivity'
     :return: dataframe with 'date' and 'file_name' as fields
     """
     index_url = '?prefix='
-    url = paths.remote_path + index_url + category
+    subdirectory = file_meta.tool + '/'
+    if file_meta.category != '':
+        subdirectory = subdirectory + file_meta.category + '/'
+    url = paths.remote_path + index_url + subdirectory
     listing = make_http_request(url)
     # Code to convert XML to pd df courtesy of
     # https://stackabuse.com/reading-and-writing-xml-files-in-python-with-panda
@@ -287,7 +319,7 @@ def get_data_commons_index(paths, category):
     df['date'] = pd.to_datetime(df['last_modified'],
                                 format = '%Y-%m-%dT%H:%M:%S')
     # Remove the category name and trailing slash from the file name
-    df['file_name'] = df['file_name'].str.replace(category,"")
+    df['file_name'] = df['file_name'].str.replace(subdirectory,"")
     # Reset the index and return
     df = df[['date','file_name']].reset_index(drop=True)
     return df
