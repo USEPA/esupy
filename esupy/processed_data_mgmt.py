@@ -61,7 +61,7 @@ def download_from_remote(file_meta, paths, **kwargs):
     if file_meta.category != '':
         category = category + file_meta.category + '/'
     base_url = paths.remote_path + category
-    files = get_most_recent_from_index(file_meta.name_data, category, paths)
+    files = get_most_recent_from_index(file_meta, paths)
     if files == []:
         log.info('%s not found in %s', file_meta.name_data, base_url)
     else:
@@ -151,21 +151,20 @@ def find_file(meta,paths):
     return f
 
 
-def get_most_recent_from_index(file_name, category, paths):
+def get_most_recent_from_index(file_meta, paths):
     """
     Sorts the data commons index by most recent date and returns
     the matching files of that name that share the same version and hash
-    :param file_name:
-    :param category:
+    :param file_meta:
     :param paths:
     :return: list, most recently created datafiles, metadata, log files
     """
 
-    file_df = get_data_commons_index(paths, category)
+    file_df = get_data_commons_index(paths, file_meta.category)
     if file_df is None:
         return None
     file_df = parse_data_commons_index(file_df)
-    df = file_df[file_df['name']==file_name]
+    df = file_df[file_df['name']==file_meta.name_data]
     if len(df) == 0:
         return None
     else:
@@ -173,7 +172,8 @@ def get_most_recent_from_index(file_name, category, paths):
         # select first file name in list, extract the file version and git hash,
         # return list of files that include version/hash (to include metadata and log files)
         recent_file = df['file_name'][0]
-        vh = "_".join(strip_file_extension(recent_file).replace(f'{file_name}_', '').split("_", 2)[:2])
+        vh = "_".join(strip_file_extension(recent_file).replace(
+            f'{file_meta.name_data}_', '').split("_", 2)[:2])
         if vh != '':
             df_sub = [string for string in df['file_name'] if vh in string]
         else:
