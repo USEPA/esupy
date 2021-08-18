@@ -153,8 +153,8 @@ def find_file(meta,paths):
 
 def get_most_recent_from_index(file_meta, paths):
     """
-    Sorts the data commons index by most recent date and returns
-    the matching files of that name that share the same version and hash
+    Sorts the data commons index by most recent date for the required extension 
+    and returns the matching files of that name that share the same version and hash
     :param file_meta:
     :param paths:
     :return: list, most recently created datafiles, metadata, log files
@@ -165,13 +165,14 @@ def get_most_recent_from_index(file_meta, paths):
         return None
     file_df = parse_data_commons_index(file_df)
     df = file_df[file_df['name']==file_meta.name_data]
-    if len(df) == 0:
+    df_ext = df[df['ext']==file_meta.extension]
+    if len(df_ext) == 0:
         return None
     else:
-        df = df.sort_values(by='date', ascending=False).reset_index(drop=True)
+        df_ext = df_ext.sort_values(by='date', ascending=False).reset_index(drop=True)
         # select first file name in list, extract the file version and git hash,
         # return list of files that include version/hash (to include metadata and log files)
-        recent_file = df['file_name'][0]
+        recent_file = df_ext['file_name'][0]
         vh = "_".join(strip_file_extension(recent_file).replace(
             f'{file_meta.name_data}_', '').split("_", 2)[:2])
         if vh != '':
