@@ -47,30 +47,30 @@ def load_preprocessed_output(file_meta, paths):
         return None
 
 
-def download_from_remote(meta, paths, **kwargs):
+def download_from_remote(file_meta, paths, **kwargs):
     """
     Downloads one or more files from remote and stores locally based on the
     most recent instance of that file. All files that share name_data, version, and
     hash will be downloaded together.
-    :param meta: populated instance of class FileMeta
+    :param file_meta: populated instance of class FileMeta
     :param paths: instance of class Paths
     :param kwargs: option to include 'subdirectory_dict', a dictionary that
          directs local data storage location based on extension
     """
-    category = meta.tool + '/'
-    if meta.category != '':
-        category = category + meta.category + '/'
+    category = file_meta.tool + '/'
+    if file_meta.category != '':
+        category = category + file_meta.category + '/'
     base_url = paths.remote_path + category
-    files = get_most_recent_from_index(meta.name_data, category, paths)
+    files = get_most_recent_from_index(file_meta.name_data, category, paths)
     if files == []:
-        log.info('%s not found in %s', meta.name_data, base_url)
+        log.info('%s not found in %s', file_meta.name_data, base_url)
     else:
         for f in files:
             url = base_url + f
             r = make_http_request(url)
             if r is not None:
                 # set subdirectory
-                subdirectory = meta.category
+                subdirectory = file_meta.category
                 # if there is a dictionary with specific subdirectories
                 # based on end of filename, modify the subdirectory
                 if kwargs != {}:
