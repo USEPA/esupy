@@ -49,22 +49,23 @@ def load_preprocessed_output(file_meta, paths):
 
 def download_from_remote(meta, paths, **kwargs):
     """
-    Downloads a preprocessed file from remote and stores locally based on the
-    most recent instance of that file
+    Downloads one or more files from remote and stores locally based on the
+    most recent instance of that file. All files that share name_data, version, and
+    hash will be downloaded together.
     :param meta: populated instance of class FileMeta
     :param paths: instance of class Paths
     :param kwargs: option to include 'subdirectory_dict', a dictionary that
-         directs local data storage location
+         directs local data storage location based on extension
     """
     category = meta.tool + '/'
     if meta.category != '':
         category = category + meta.category + '/'
     base_url = paths.remote_path + category
-    file_name = get_most_recent_from_index(meta.name_data, category, paths)
-    if file_name == []:
+    files = get_most_recent_from_index(meta.name_data, category, paths)
+    if files == []:
         log.info('%s not found in %s', meta.name_data, base_url)
     else:
-        for f in file_name:
+        for f in files:
             url = base_url + f
             r = make_http_request(url)
             if r is not None:
@@ -153,7 +154,7 @@ def find_file(meta,paths):
 def get_most_recent_from_index(file_name, category, paths):
     """
     Sorts the data commons index by most recent date and returns
-    the matching file name
+    the matching files of that name that share the same version and hash
     :param file_name:
     :param category:
     :param paths:
