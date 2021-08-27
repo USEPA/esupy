@@ -81,6 +81,11 @@ def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows = False,
         map_to.remove(field_dict['SourceName'])
         map_from.remove('SourceListName')
     
+    for field in map_to:
+        df[field].fillna('', inplace=True)
+    for field in map_from:
+        mapping[field].fillna('', inplace=True)
+
     # merge df with flows    
     mapped_df = pd.merge(df, mapping,
                              left_on=map_to,
