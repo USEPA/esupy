@@ -5,6 +5,7 @@
 Functions to facilitate flow mapping from fedelemflowlist and material flow list
 """
 import pandas as pd
+import logging as log
 
 def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows = False,
                        field_dict = None, ignore_source_name = False):
@@ -52,12 +53,25 @@ def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows = False,
                       "TargetFlowUUID"]
     
     if flow_type == 'ELEMENTARY_FLOW':
-        import fedelemflowlist as fedefl
-        mapping = fedefl.get_flowmapping(source)
+        try:
+            import fedelemflowlist as fedefl
+            mapping = fedefl.get_flowmapping(source)
+        except ImportError:
+            log.warning('Error importing fedelemflowlist, install fedelemflowlist '
+                        'to apply flow mapping to elementary flows: '
+                        'https://github.com/USEPA/Federal-LCA-Commons-Elementary-Flow-List/wiki/GitHub-Contributors#install-for-users')
+            return None
     else:
-        import materialflowlist as mfl
-        mapping = mfl.get_flowmapping(source)
+        try:
+            import materialflowlist as mfl
+            mapping = mfl.get_flowmapping(source)
+        except ImportError:
+            log.warning('Error importing materialflowlist, install materialflowlist '
+                        'to apply flow mapping to waste and technosphere flows: '
+                        'https://github.com/USEPA/materialflowlist/wiki')
+            return None
     if len(mapping) == 0:
+        # mapping not found
         return None
     
     mapping = mapping[mapping_fields]    
