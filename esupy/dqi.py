@@ -6,6 +6,7 @@ Functions for processing and reporting life cycle data quality indicators
 """
 
 import pandas as pd
+import numpy as np
 
 
 temporal_correlation_to_dqi = {3: 1,
@@ -33,7 +34,7 @@ def apply_dqi_to_series(source_series, indicator, bound_to_dqi=None):
     Returns a series of indicator scores based on dictionary boundaries
     applied to the source_series
     e.g. df['TemporalCorrelation'] = apply_dqi_to_series(
-        df['Year2']-df['Year1'],'TemporalCorrelation') 
+        df['Year2']-df['Year1'],'TemporalCorrelation')
     """
     if bound_to_dqi is None:
         bound_to_dqi = _return_bound_key(indicator)
@@ -77,6 +78,7 @@ def _return_bound_key(indicator):
         return dqi_dict[indicator]
     return None
 
+
 def get_weighted_average(df, data_col, weight_col, agg_cols):
     """
     Generates a weighted average result as a series based on passed columns
@@ -89,17 +91,18 @@ def get_weighted_average(df, data_col, weight_col, agg_cols):
     returns result : series reflecting the weighted average values for the
         data_col, at length consistent with the aggregated dataframe, to be
         reapplied to the data_col in the aggregated dataframe.
-    
-    e.g. 
+
+    e.g.
     df_agg = df.groupby(agg_cols).agg({weight_col: ['sum']})
     df_agg[data_col] = get_weighted_average(df, data_col,
                                             weight_col, agg_cols)
     """
 
-    df = df.assign(_data_times_weight=df[data_col] * df[weight_col])
-    df = df.assign(_weight_where_notnull=df[weight_col] * pd.notnull(df[data_col]))
+    df.loc[:, '_data_times_weight'] = df[data_col] * df[weight_col]
+    df.loc[:, '_weight_where_notnull'] = df[weight_col] * pd.notnull(df[data_col])
     g = df.groupby(agg_cols)
-    wt_avg = g['_data_times_weight'].sum() / g['_weight_where_notnull'].sum()
+    wt_avg = np.divide(g['_data_times_weight'].sum(), g['_weight_where_notnull'].sum(),
+                       out=np.zeros_like(g['_data_times_weight'].sum()),
+                       where=g['_weight_where_notnull'].sum() != 0)
     del df['_data_times_weight'], df['_weight_where_notnull']
     return wt_avg
-
