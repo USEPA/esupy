@@ -125,35 +125,23 @@ def find_file(meta, paths):
     :param paths: populated instance of class Paths
     :return: str with the file path if found, otherwise an empty string
     """
-    path = os.path.realpath(paths.local_path + "/" + meta.category)
+    path = os.path.realpath(f'{paths.local_path}/{meta.category}')
     if os.path.exists(path):
-        search_words = meta.name_data
-        matches = []
-        fs = {}
-        for f in os.scandir(path):
-            name = f.name
-            # get file creation time
-            st = f.stat().st_ctime
-            fs[name] = st
-            matches = []
-            for k in fs.keys():
-                if re.search(search_words, k):
-                    if re.search(meta.ext, k, re.IGNORECASE):
-                        matches.append(k)
-        if len(matches) == 0:
-            f = ""
-        else:
-            # Filter the dict by matches
-            r = {k: v for k, v in fs.items() if k in matches}
-            # Sort the dict by matches, return a list
-            # r = {k:v for k,v in sorted(r.items(),
-            #      key=lambda item: item[1], reverse=True)}
-            rl = [k for k, v
-                  in sorted(r.items(), key=lambda item: item[1], reverse=True)]
-            f = os.path.realpath(path + "/" + rl[0])
-    else:
-        f = ""
-    return f
+        with os.scandir(path) as files:
+            # List all file satisfying the criteria in the passed metadata
+            matches = [f for f in files
+                       if meta.name_data in f.name
+                       and meta.ext.lower() in f.name.lower()]
+            # Sort files in reverse order by ctime (creation time on Windows,
+            # last metadata modification time on Unix)
+            sorted_matches = sorted(matches,
+                                    key=lambda f: f.stat().st_ctime,
+                                    reverse=True)
+        # Return the path to the most recent matching file, or '' if no
+        # match exists.
+        if sorted_matches:
+            return os.path.realpath(f'{path}/{sorted_matches[0].name}')
+    return ''
 
 
 def get_most_recent_from_index(file_meta, paths):
