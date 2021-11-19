@@ -7,6 +7,8 @@ Functions for handling remote requests and parsing
 import logging as log
 import requests
 import requests_ftp
+from urllib.parse import urlsplit
+
 
 def make_http_request(url):
     """
@@ -14,18 +16,14 @@ def make_http_request(url):
     :param url: URL to query
     :return: request Object
     """
-    r = []
-    try:
-        r = requests.get(url)
-    except requests.exceptions.InvalidSchema: # if url is ftp rather than http
-        requests_ftp.monkeypatch_session()
-        r = requests.Session().get(url)
-    except requests.exceptions.ConnectionError:
-        log.error("URL Connection Error for " + url)
-    try:
-        r.raise_for_status()
-    except requests.exceptions.HTTPError:
-        log.error('Error in URL request!')
-        r = None
-    return r
-
+    session = (requests_ftp.ftp.FTPSession if urlsplit(url).scheme == 'ftp'
+               else requests.Session)
+    with session() as s:
+        try:
+            response = s.get(url)
+            response.raise_for_status()
+        except requests.exceptions.ConnectionError:
+            log.error("URL Connection Error for %s", url)
+        except requests.exceptions.HTTPError:
+            log.error('Error in URL request!')
+    return response
