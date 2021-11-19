@@ -12,7 +12,7 @@ import re
 import json
 import appdirs
 import xml.etree.ElementTree as ET
-from esupy.remote import make_http_request
+from esupy.remote import make_url_request
 from esupy.util import strip_file_extension
 
 
@@ -69,7 +69,7 @@ def download_from_remote(file_meta, paths, **kwargs):
     else:
         for f in files:
             url = base_url + f
-            r = make_http_request(url)
+            r = make_url_request(url)
             if r is not None:
                 # set subdirectory
                 subdirectory = file_meta.category
@@ -311,7 +311,7 @@ def get_data_commons_index(file_meta, paths):
     if file_meta.category != '':
         subdirectory = subdirectory + file_meta.category + '/'
     url = paths.remote_path + index_url + subdirectory
-    listing = make_http_request(url)
+    listing = make_url_request(url)
     # Code to convert XML to pd df courtesy of
     # https://stackabuse.com/reading-and-writing-xml-files-in-python-with-panda
     contents = ET.XML(listing.text)
