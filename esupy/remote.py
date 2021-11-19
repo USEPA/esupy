@@ -10,7 +10,7 @@ import requests_ftp
 from urllib.parse import urlsplit
 
 
-def make_url_requesturl):
+def make_url_request(url):
     """
     Makes http request using requests library
     :param url: URL to query
