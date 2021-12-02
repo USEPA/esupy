@@ -135,7 +135,7 @@ def find_file(meta,paths):
             for k in fs.keys():
                 if re.search(search_words, k):
                     if re.search(meta.ext, k, re.IGNORECASE):
-                        matches.append(k)                    
+                        matches.append(k)
         if len(matches) == 0:
             f = ""
         else:
@@ -152,7 +152,7 @@ def find_file(meta,paths):
 
 def get_most_recent_from_index(file_meta, paths):
     """
-    Sorts the data commons index by most recent date for the required extension 
+    Sorts the data commons index by most recent date for the required extension
     and returns the matching files of that name that share the same version and hash
     :param file_meta:
     :param paths:
@@ -198,7 +198,7 @@ def write_df_to_file(df,paths,meta):
         if meta.ext=="parquet":
             file = file + ".parquet"
             file = os.path.realpath(file)
-            df.to_parquet(file, engine="pyarrow")
+            df.to_parquet(file)
         elif meta.ext == "csv":
             file = file + ".csv"
             file = os.path.realpath(file)
@@ -249,7 +249,7 @@ def write_metadata_to_file(paths, meta):
 def read_source_metadata(paths, meta, force_JSON = False):
     """return the locally saved metadata dictionary from JSON,
     meta should reflect the outputfile for which the metadata is associated
-    
+
     :param meta: object of class FileMeta used to load the outputfile
     :param paths: object of class Paths
     :param force_JSON: bool, searches based on named JSON instead of outputfile
@@ -271,7 +271,7 @@ def read_source_metadata(paths, meta, force_JSON = False):
     except FileNotFoundError:
         log.warning("metadata not found for %s", meta.name_data)
         return None
-    
+
 
 def create_paths_if_missing(file):
     """
@@ -343,4 +343,3 @@ def parse_data_commons_index(df):
              'ext','date', 'file_name']].reset_index(drop=True)
     df.fillna('', inplace=True)
     return df
-
