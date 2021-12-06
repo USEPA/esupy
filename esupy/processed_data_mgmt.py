@@ -208,7 +208,7 @@ def write_df_to_file(df, paths, meta):
         if meta.ext == "parquet":
             file = file + ".parquet"
             file = os.path.realpath(file)
-            df.to_parquet(file, engine="pyarrow")
+            df.to_parquet(file)
         elif meta.ext == "csv":
             file = file + ".csv"
             file = os.path.realpath(file)
