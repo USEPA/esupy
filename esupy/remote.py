@@ -31,12 +31,3 @@ def make_url_request(url, set_cookies=False):
         except requests.exceptions.HTTPError:
             log.error('Error in URL request!')
     return response
-
-
-# Alias for backward compatibility
-def make_http_request(url):
-    log.warning('esupy.remote.make_http_request() has been renamed to '
-                'esupy.remote.make_url_request(). '
-                'esupy.remote.make_http_request() will be removed in the '
-                'future. Please modify your code accordingly.')
-    return make_url_request(url)
