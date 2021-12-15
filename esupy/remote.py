@@ -10,7 +10,7 @@ import requests_ftp
 from urllib.parse import urlsplit
 
 
-def make_url_request(url, set_cookies=False):
+def make_url_request(url, *, set_cookies=False, confirm_gdrive=False, **_):
     """
     Makes http request using requests library
     :param url: URL to query
@@ -22,9 +22,13 @@ def make_url_request(url, set_cookies=False):
         try:
             # The session object s preserves cookies, so the second s.get()
             # will have the cookies that came from the first s.get()
-            if set_cookies:
-                s.get(url)
             response = s.get(url)
+            if set_cookies:
+                response = s.get(url)
+            if confirm_gdrive:
+                response = s.get(url, params={'confirm': response.cookies
+                                              .items()
+                                              .get('download_warning')})
             response.raise_for_status()
         except requests.exceptions.ConnectionError:
             log.error("URL Connection Error for %s", url)
