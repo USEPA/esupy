@@ -26,9 +26,9 @@ def make_url_request(url, *, set_cookies=False, confirm_gdrive=False):
             if set_cookies:
                 response = s.get(url)
             if confirm_gdrive:
-                response = s.get(url, params={'confirm': response.cookies
-                                              .items()
-                                              .get('download_warning')})
+                confirmation_token = [v for k, v in response.cookies.items()
+                                      if k.startswith('download_warning')][0]
+                response = s.get(url, params={'confirm': confirmation_token})
             response.raise_for_status()
         except requests.exceptions.ConnectionError:
             log.error("URL Connection Error for %s", url)
