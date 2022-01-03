@@ -11,3 +11,7 @@ For 2010, a collection of six different SHP *tl_2010_xx_uac10.zip* files are ava
 Pre-2015 SHPs [were encoded](https://www.census.gov/programs-surveys/geography/technical-documentation/user-note/special-characters.html) as ISO-8859-1 rather than UTF-8. 
 Since UTF-8 is now the default encoding expected by `gpd.read_file()`, reading these pre-2015 SHPs generates a series of "WARNING Failed to decode ... using utf-8 codec" console messages.
 While the [`gpd.read_file()` documentation](https://geopandas.org/en/stable/docs/reference/api/geopandas.read_file.html) indicates that an `encoding` kwarg (e.g., `encoding='iso-8859-1'`) can be passed to `fiona.open()`, attempting to do so currently returns a TypeError. As such, please ignore the "WARNING Failed to decode ... using utf-8 codec" messages, since they cannot be suppressed with the `warnings` library.
+
+
+# Census Urban and Rural County Populations
+Definitions of Census urban and rural areas (updated decennially) are algorithmic and applied at the block-level, making them difficult to abstract to the county-level. Instead of adapting a binary urban/rural classification, we can tabulate urban and rural population percentages within each county. However, because urban and rural labels are assigned to blocks, population data at this scale is only avaliable via the decennial Census. So when we want to align these county-level percentages with other data, we must rely on the most recent decennial census before them (e.g. 2017 emissions data would rely on a 2010 Census table)

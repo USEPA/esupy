@@ -116,13 +116,39 @@ def crs_harmonize(gdf):
     else:
         gdf = gdf.to_crs(WGS84)
     return gdf
+
+def get_census_tbl(year):
+    """
+    Read in table of Census county-level urban/rural population counts.
     
+    :param year: data year to align with Census table
+        
+    Consider implementing Great Expectations to document and repeate manual
+    data checks/validation I performed.
+    e.g., without usecols filter, all(df.POP_COU == (df.POP_URBAN + df.POP_RURAL))
+    """
+    if year < 2010 | year >= 2020:
+        print('County-level data year not yet available')
+        return None
+    
+    cnty_url = 'https://www2.census.gov/geo/docs/reference/ua/PctUrbanRural_County.txt'
+    try:
+        df = pd.read_csv(cnty_url, encoding='iso-8859-1',
+                         usecols = ['STATE','COUNTY','POP_COU','POP_URBAN'])   
+    except urllib.error.HTTPError:
+        print('File unavailable, check Census domain status')
+    
+    df['STATE'] = df['STATE'].apply(lambda x: '{0:0>2}'.format(x))
+    df['COUNTY'] = df['COUNTY'].apply(lambda x: '{0:0>3}'.format(x))
+    df['FIPS'] = df['STATE'] + df['COUNTY']
+    df['pct_pop_urb'] = df['POP_URBAN'] / df['POP_COU']
+    return df
 
 if __name__ == "__main__":  
     import stewi
     import time
     time_start = time.time()
-    year = 2010 
+    year = 2017 
     pt_raw = stewi.getInventoryFacilities('TRI',year)  # ('TRI', 2019)
     pt_urb = urb_intersect(pt_raw, year)
     print(f'[total] --- {time.time() - time_start} seconds ---')
