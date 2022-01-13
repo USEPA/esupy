@@ -2,10 +2,10 @@ from setuptools import setup
 
 setup(
     name='esupy',
-    version='0.1.7',
+    version='0.1.8',
     packages=['esupy'],
     python_requires=">=3.7",
-    install_requires=['requests >=2.22.0',
+    install_requires=['requests>=2.22.0',
                       'appdirs>=1.4.3',
                       'pandas>=1.1.0',
                       'requests_ftp>=0.3.1',
