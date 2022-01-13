@@ -7,25 +7,40 @@ Functions for handling remote requests and parsing
 import logging as log
 import requests
 import requests_ftp
+from urllib.parse import urlsplit
 
-def make_http_request(url):
+
+def make_url_request(url, *, set_cookies=False, confirm_gdrive=False):
     """
     Makes http request using requests library
     :param url: URL to query
     :return: request Object
     """
-    r = []
-    try:
-        r = requests.get(url)
-    except requests.exceptions.InvalidSchema: # if url is ftp rather than http
-        requests_ftp.monkeypatch_session()
-        r = requests.Session().get(url)
-    except requests.exceptions.ConnectionError:
-        log.error("URL Connection Error for " + url)
-    try:
-        r.raise_for_status()
-    except requests.exceptions.HTTPError:
-        log.error('Error in URL request!')
-        r = None
-    return r
+    session = (requests_ftp.ftp.FTPSession if urlsplit(url).scheme == 'ftp'
+               else requests.Session)
+    with session() as s:
+        try:
+            # The session object s preserves cookies, so the second s.get()
+            # will have the cookies that came from the first s.get()
+            response = s.get(url)
+            if set_cookies:
+                response = s.get(url)
+            if confirm_gdrive:
+                confirmation_token = [v for k, v in response.cookies.items()
+                                      if k.startswith('download_warning')][0]
+                response = s.get(url, params={'confirm': confirmation_token})
+            response.raise_for_status()
+        except requests.exceptions.ConnectionError:
+            log.error("URL Connection Error for %s", url)
+        except requests.exceptions.HTTPError:
+            log.error('Error in URL request!')
+    return response
 
+
+# Alias for backward compatibility
+def make_http_request(url):
+    log.warning('esupy.remote.make_http_request() has been renamed to '
+                'esupy.remote.make_url_request(). '
+                'esupy.remote.make_http_request() will be removed in the '
+                'future. Please modify your code accordingly.')
+    return make_url_request(url)
