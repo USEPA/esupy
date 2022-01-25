@@ -1,0 +1,4 @@
+gdal==3.4.1
+fiona==1.8.20
+geopandas==0.10.2
+# shapely==1.8.0

@@ -1,0 +1,18 @@
+2008: https://www2.census.gov/geo/tiger/TIGER2008/tl_2008_us_uac.zip
+2009: https://www2.census.gov/geo/tiger/TIGER2009/tl_2009_us_uac.zip
+2010:  # need _us_ AND __78__ (USVI) SHP files, since former does not contain info of latter
+    - https://www2.census.gov/geo/tiger/TIGER2010/UA/2010/tl_2010_us_uac10.zip
+    - https://www2.census.gov/geo/tiger/TIGER2010/UA/2010/tl_2010_78_uac10.zip
+2011:  # geo/tiger/TIGER2011 contains no UAC files; duplicate 2010
+    - https://www2.census.gov/geo/tiger/TIGER2010/UA/2010/tl_2010_us_uac10.zip
+    - https://www2.census.gov/geo/tiger/TIGER2010/UA/2010/tl_2010_78_uac10.zip
+2012: https://www2.census.gov/geo/tiger/TIGER2012/UAC/tl_2012_us_uac10.zip
+2013: https://www2.census.gov/geo/tiger/TIGER2013/UAC/tl_2013_us_uac10.zip
+2014: https://www2.census.gov/geo/tiger/TIGER2014/UAC/tl_2014_us_uac10.zip
+2015: https://www2.census.gov/geo/tiger/TIGER2015/UAC/tl_2015_us_uac10.zip
+2016: https://www2.census.gov/geo/tiger/TIGER2016/UAC/tl_2016_us_uac10.zip
+2017: https://www2.census.gov/geo/tiger/TIGER2017/UAC/tl_2017_us_uac10.zip
+2018: https://www2.census.gov/geo/tiger/TIGER2018/UAC/tl_2018_us_uac10.zip
+2019: https://www2.census.gov/geo/tiger/TIGER2019/UAC/tl_2019_us_uac10.zip
+2020: https://www2.census.gov/geo/tiger/TIGER2020/UAC/tl_2020_us_uac10.zip
+2021: https://www2.census.gov/geo/tiger/TIGER2021/UAC/tl_2021_us_uac10.zip
