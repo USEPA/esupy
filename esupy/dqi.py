@@ -112,9 +112,10 @@ def get_weighted_average(df, data_col, weight_col, agg_cols):
     df_agg[data_col] = get_weighted_average(df, data_col,
                                             weight_col, agg_cols)
     """
-
     df.loc[:, '_data_times_weight'] = df[data_col] * df[weight_col]
     df.loc[:, '_weight_where_notnull'] = df[weight_col] * pd.notnull(df[data_col])
+    calc_cols = ['_weight_where_notnull', '_data_times_weight']
+    df[calc_cols] = df[calc_cols].applymap(float)
     g = df.groupby(agg_cols)
     wt_avg = np.divide(g['_data_times_weight'].sum(), g['_weight_where_notnull'].sum(),
                        out=np.zeros_like(g['_data_times_weight'].sum()),
