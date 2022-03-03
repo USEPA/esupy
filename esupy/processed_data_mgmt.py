@@ -59,18 +59,21 @@ def download_from_remote(file_meta, paths, **kwargs):
     :param paths: instance of class Paths
     :param kwargs: option to include 'subdirectory_dict', a dictionary that
          directs local data storage location based on extension
+    :return: bool False if download fails, True if successful
     """
+    status = False
     base_url = paths.remote_path + file_meta.tool + '/'
     if file_meta.category != '':
         base_url = base_url + file_meta.category + '/'
     files = get_most_recent_from_index(file_meta, paths)
-    if files == []:
+    if files is None:
         log.info('%s not found in %s', file_meta.name_data, base_url)
     else:
         for f in files:
             url = base_url + f
             r = make_url_request(url)
             if r is not None:
+                status = True
                 # set subdirectory
                 subdirectory = file_meta.category
                 # if there is a dictionary with specific subdirectories
@@ -87,6 +90,7 @@ def download_from_remote(file_meta, paths, **kwargs):
                 log.info('%s saved to %s', f, folder)
                 with open(file, 'wb') as f:
                     f.write(r.content)
+    return status
 
 
 def remove_extra_files(file_meta, paths):
