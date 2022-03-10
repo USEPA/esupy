@@ -226,8 +226,17 @@ def read_into_df(file):
         df = pd.read_parquet(file)
     elif ext == ".csv":
         df = pd.read_csv(file)
+    elif ext == ".rds":
+        try:
+            import rpy2.robjects as robjects
+            from rpy2.robjects import pandas2ri
+        except ImportError:
+            log.error("Must install rpy2 to read .rds files")
+        pandas2ri.activate()
+        readRDS = robjects.r['readRDS']
+        df = readRDS(file)
     else:
-        log.error("No reader specified for extension"+ext)
+        log.error(f"No reader specified for extension {ext}")
     return df
 
 # def define_metafile(datafile,paths):
