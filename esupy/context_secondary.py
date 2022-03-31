@@ -17,8 +17,8 @@ try:
     import shapely as sh
     has_geo_pkgs = True
 except ImportError:
-    log.warning('GeoPandas and/or Shapely were not successfully imported;\n'
-                'see README.md for install instructions.')
+    log.warning('GeoPandas and/or Shapely were not successfully imported;'
+                'see esupy/README.md for install instructions.')
     has_geo_pkgs = False
 
 datapath = Path(__file__).parent/'data_census'
