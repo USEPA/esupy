@@ -3,16 +3,18 @@
 # coding=utf-8
 
 """
-Module to assign secondary FEDEFL contexts, including release height 
+Module to assign secondary FEDEFL contexts, including release height
 and population density (urban/rural).
 """
 import logging as log
-import numpy as np
 import urllib.error
-import yaml
 from pathlib import Path
 
-try: 
+import numpy as np
+import pandas as pd
+import yaml
+
+try:
     import geopandas as gpd
     import shapely as sh
     has_geo_pkgs = True
@@ -42,7 +44,7 @@ def classify_height(df):
 
 def urb_intersect(df_pt, year):
     """
-    Classify lat/long points as urban, rural, or unspecified 
+    Classify lat/long points as urban, rural, or unspecified
     via intersection with Census-defined urban polygons in a given data year.
     :param df: pandas dataframe, with Latitude and Longitude cols
     :param year: data year of Census urban area/cluster polygons
@@ -51,39 +53,39 @@ def urb_intersect(df_pt, year):
     gdf_urb = get_census_shp(year)
     mpu = multipoly_agg(gdf_urb) # aggregate to avoid element-wise comparison
     mpu = sh.prepared.prep(mpu)  # shapely's quick spatial indexing fxn
-    
+
     gdf_pt = parse_pt_data(df_pt)
     gdf_pt['urban'] = gdf_pt['geometry'].apply(lambda x: mpu.intersects(x))
-    
+
     # identify 'unspecified' via Lat+Long cols (gpd is-na/empty fxns won't catch)
     cond = [(gdf_pt['Latitude'].isna() | gdf_pt['Longitude'].isna()),
             (gdf_pt['urban'] == True),
             (gdf_pt['urban'] == False)]
     cmpt = ['unspecified', 'urban', 'rural']
     gdf_pt['cmpt_urb'] = np.select(cond, cmpt)
-    df_pt = gdf_pt.drop(['geometry','urban'], axis=1)
+    df_pt = pd.DataFrame(gdf_pt.drop(columns=['geometry','urban']))
     return df_pt
 
 def get_census_shp(year):
     """
     Read in shapefile as gpd geodataframe.
-    Refer to data_census/README.md for explanation of encoding errors 
+    Refer to data_census/README.md for explanation of encoding errors
     thrown by gpd.read_file() for pre-2015 SHPs
     :param datapath: pathlib Path pointing to shapefile dir
     :param filename: file name string with extension
-    """ 
+    """
     with open(datapath / 'census_uac_urls.yaml', 'r') as f:
         uac_url = yaml.safe_load(f)
-            
+
     try:
-        log.info(f'Retrieving {year} UAC shapefile from {uac_url[year]}')
+        log.info(f'Retrieving {year} UAC shapefile from url:\n{uac_url[year]}')
         if year in [2010, 2011]:  # data years rely on 2x SHP's
             gdf0 = gpd.read_file(uac_url[year][0])
             gdf1 = gpd.read_file(uac_url[year][1])
             gdf = gdf0.append(gdf1)
             if not gdf.crs == gdf0.crs == gdf1.crs:
                 log.error(f'Combined {year} gdf CRS is inconsistent')
-        else: 
+        else:
             gdf = gpd.read_file(uac_url[year])
             # gdf = gpd.read_file(uac_url[year], encoding = 'iso-8859-1')
     except KeyError:
@@ -92,24 +94,24 @@ def get_census_shp(year):
         log.error('File unavailable, check Census domain status:\n' +
                   uac_url[year])
         return None
-            
+
     gdf = crs_harmonize(gdf)  # convert to WGS84
-    
+
     # check for empty/na geom values
     ena = sum(gdf['geometry'].is_empty | gdf['geometry'].isna())
-    if ena > 0: 
+    if ena > 0:
         log.info(f"{year} Census SHP has {ena} empty + NA geometries")
     return gdf
 
 def parse_pt_data(df):
     """
-    Convert df containing "Latitude" and "Longitude" columns to 
+    Convert df containing "Latitude" and "Longitude" columns to
     gpd.GeoDataFrame with geometry column of Points
     :param df: pandas dataframe
     """
     # check for na lat/long values
-    pt_na = sum(df['Latitude'].isna() | df['Longitude'].isna()) 
-    if pt_na != 0: 
+    pt_na = sum(df['Latitude'].isna() | df['Longitude'].isna())
+    if pt_na != 0:
         log.info(f"Point data contains {pt_na} nan Lat and/or Long values")
     gdf = gpd.GeoDataFrame(
         df, geometry=gpd.points_from_xy(df.Longitude, df.Latitude))
@@ -129,13 +131,13 @@ def multipoly_agg(gdf):
         return None
     # multipolygons are collections of polygons; extract & concatenate into list
     mp = [poly for multipoly in gdf_mp['geometry'] for poly in multipoly]
-    p = list(gdf_p['geometry']) # concatenate single polygons into a list    
+    p = list(gdf_p['geometry']) # concatenate single polygons into a list
     multipoly = sh.geometry.MultiPolygon(mp + p)  # join lists & convert to single mp
     return multipoly
 
 def crs_harmonize(gdf):
     """
-    Convert coordinate reference systems (CRS) to WGS84 (EPSG:4326), 
+    Convert coordinate reference systems (CRS) to WGS84 (EPSG:4326),
     or if missing, assume WGS84 and assign
     :param gdf: GeoPandas geodataframe object
     """
@@ -146,35 +148,35 @@ def crs_harmonize(gdf):
         gdf = gdf.to_crs(WGS84)
     return gdf
 
-def main(df, **kwargs):
+
+def main(df, year, *cmpts):
     """
-    Apply one or more compartment assignment functions to a dataframe via 
-    flags specified in kwargs.
-    :param df: pandas dataframe
-    :param kwargs: string flags that specify which compartment assignment 
-        functions to invoke; 'urb' for urb_intersect() and 
-        'rh' for classify_height(). Numeric 'year' is also needed for 'urb'.
-    """    
-    if 'urb' in kwargs['compartment']:         
-        if not has_geo_pkgs:
-            log.warning('Unable to assign urban/rural compartment absent '
-                        'GeoPandas and Shapely')
-            return None
-        elif has_geo_pkgs:
-            df = urb_intersect(df, kwargs['year'])
-    
-    elif 'rh' in kwargs['compartment']:
+    Handler function to check geospatial dependencies, and flexibly assign
+    urban/rural (via 'urb') and/or release height ('rh') secondary compartments.,
+    :param df: pd.DataFrame
+    :param year: int, data year
+    :param cmpts: str, flag(s) for compartment assignment
+    """
+    if 'urb' not in cmpts and 'rh' not in cmpts:
+        log.warning('Please pass one or more valid *cmpts string codes: {urb, rh}')
+        return None
+    elif 'urb' in cmpts and not has_geo_pkgs:
+        log.error('Geospatial dependencies of esupy.context_secondary missing; '
+                  'unable to assign urban/rural compartment.\n See esupy README.md.')
+        return None
+    if 'urb' in cmpts:
+        df = urb_intersect(df, year)
+    if 'rh' in cmpts:
         df = classify_height(df)
-    
     return df
 
 
-if __name__ == "__main__":  
+if __name__ == "__main__":
     import stewi
     # import time
-    yr = 2017 
-    df_raw = stewi.getInventoryFacilities('NEI', yr)  # ('TRI', 2019)
+    year = 2017
+    df_raw = stewi.getInventoryFacilities('NEI', year)  # ('TRI', 2019)
     # time_start = time.time()
-    # df_urb = urb_intersect(pt_raw, yr)
-    df_cmpts = main(df_raw, compartment=['urb','rh'], year=yr)
+    # df_urb = urb_intersect(pt_raw, year)
+    df_cmpts = main(df_raw, year, 'urb', 'rh')
     # print(f'[total] --- {time.time() - time_start} seconds ---')
