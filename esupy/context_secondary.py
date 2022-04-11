@@ -19,8 +19,8 @@ try:
     import shapely as sh
     has_geo_pkgs = True
 except ImportError:
-    log.warning('GeoPandas and/or Shapely were not successfully imported;'
-                'see esupy/README.md for install instructions.')
+    log.info('GeoPandas and/or Shapely were not successfully imported;\n'
+             'see esupy/README.md for install instructions.')
     has_geo_pkgs = False
 
 datapath = Path(__file__).parent/'data_census'
@@ -148,22 +148,21 @@ def crs_harmonize(gdf):
         gdf = gdf.to_crs(WGS84)
     return gdf
 
-
 def main(df, year, *cmpts):
     """
-    Handler function to check geospatial dependencies, and flexibly assign
-    urban/rural (via 'urb') and/or release height ('rh') secondary compartments.,
+    Handler function to flexibly assign release height ('rh') and/or urban/rural 
+    (via 'urb', which initiates geospatial dependencies check) secondary compartments.
     :param df: pd.DataFrame
     :param year: int, data year
     :param cmpts: str, flag(s) for compartment assignment
     """
     if 'urb' not in cmpts and 'rh' not in cmpts:
-        log.warning('Please pass one or more valid *cmpts string codes: {urb, rh}')
-        return None
+        log.error('Please pass one or more valid *cmpts string codes: {urb, rh}')
+        return df
     elif 'urb' in cmpts and not has_geo_pkgs:
-        log.error('Geospatial dependencies of esupy.context_secondary missing; '
+        log.info('Geospatial dependencies of esupy.context_secondary missing; '
                   'unable to assign urban/rural compartment.\n See esupy README.md.')
-        return None
+        return df
     if 'urb' in cmpts:
         df = urb_intersect(df, year)
     if 'rh' in cmpts:

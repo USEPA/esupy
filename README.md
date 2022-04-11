@@ -5,18 +5,14 @@ A Python library supporting Python-based tools in USEPA's tool ecosystem. The pa
 
 ## Installation Instructions for Optional Geospatial Packages
 
-### conda (recommended)
-Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) on your machine and create a new project directory containing env_geo.yaml. Using the conda terminal to cd to this new directory, run `conda env create -f env_geo.yaml`.
-Once esupy and its optional geospatial depdencies are installed this way, other EPA packages (such as [StEWI](https://github.com/USEPA/standardizedinventories)) can be installed via pip VCS call and will recognize their esupy dependency as satisfied.
+### conda, all platforms (recommended)
+Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) on your machine and create a new project directory containing env_sec_ctxt.yaml (obtained [from StEWI](https://github.com/USEPA/standardizedinventories/blob/e36902c3d1b23423381cd43c3bc8ac016a8219bb/env_sec_ctxt.yaml)).
+Using the conda terminal to cd to this new directory, run `conda env create -f env_sec_ctxt.yaml`.
+Once the optional geospatial depdencies and esupy (as a [StEWI dependency](https://github.com/USEPA/standardizedinventories/blob/master/setup.py)) are installed this way, urban/rural secondary context assignment should occur automatically when running StEWI code.
 
 ### pip, macOS & Ubuntu
 The versions of Fiona and GDAL necessary to support GeoPandas are available for macOS and Ubuntu machines up through Python 3.9, but wheels for 3.10 are still [forthcoming](https://github.com/geopandas/geopandas/issues/2212)).
-Shapely also [has yet to publish ](https://github.com/shapely/shapely/issues/1215) Python 3.10 wheels, and so Python versions 3.7-3.9 are recommended.
-
-### pip, windows
-Installation on Windows is more involved. The simplest (albeit unofficial) route uses [pipwin](https://pypi.org/project/pipwin/) to retrieve and install [Christoph Gohlke's windows binaries](https://www.lfd.uci.edu/~gohlke/pythonlibs/) of GDAL, Fiona, and GeoPandas. 
-Call `pip install pipwin` followed by `pipwin install -r pipwin_requirements.txt` to install the binaries (plus `pipwin install shapely` if attempting a 3.10 build). 
-Upon completing the pipwin installs, the remainder of the packages can be normally pip installed via geo_requirements.txt.
+Shapely also [has yet to publish](https://github.com/shapely/shapely/issues/1215) Python 3.10 wheels, and so Python versions 3.7-3.9 are recommended.
 
 
 ## Disclaimer

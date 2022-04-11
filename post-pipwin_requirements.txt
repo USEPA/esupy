@@ -1,3 +1,0 @@
-appdirs>=1.4.3
-requests_ftp>=0.3.1
-pyarrow>=4.0.0
