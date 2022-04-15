@@ -76,9 +76,12 @@ def get_census_shp(year):
     """
     with open(datapath / 'census_uac_urls.yaml', 'r') as f:
         uac_url = yaml.safe_load(f)
-
     try:
         log.info(f'Retrieving {year} UAC shapefile from url:\n{uac_url[year]}')
+        if year < 2015:
+            log.info('Before 2015, expect series of GeoPandas WARNINGs that '
+                     'utf-8 codec fails for certain strings.\n See Text Encoding '
+                     'section of esupy/data_census/README.md for explanation.')
         if year in [2010, 2011]:  # data years rely on 2x SHP's
             gdf0 = gpd.read_file(uac_url[year][0])
             gdf1 = gpd.read_file(uac_url[year][1])
@@ -87,7 +90,8 @@ def get_census_shp(year):
                 log.error(f'Combined {year} gdf CRS is inconsistent')
         else:
             gdf = gpd.read_file(uac_url[year])
-            # gdf = gpd.read_file(uac_url[year], encoding = 'iso-8859-1')
+            # gdf = gpd.read_file(uac_url[year], encoding='iso-8859-1')
+            # BUG: should accept 'encoding' kwarg but returns error as of 04/15/22
     except KeyError:
         log.error(f'Census urban area data year {year} unavailable')
     except urllib.error.HTTPError:
@@ -150,7 +154,7 @@ def crs_harmonize(gdf):
 
 def main(df, year, *cmpts):
     """
-    Handler function to flexibly assign release height ('rh') and/or urban/rural 
+    Handler function to flexibly assign release height ('rh') and/or urban/rural
     (via 'urb', which initiates geospatial dependencies check) secondary compartments.
     :param df: pd.DataFrame
     :param year: int, data year

@@ -6,13 +6,14 @@ A Python library supporting Python-based tools in USEPA's tool ecosystem. The pa
 ## Installation Instructions for Optional Geospatial Packages
 
 ### conda, all platforms (recommended)
-Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) on your machine and create a new project directory containing env_sec_ctxt.yaml (obtained [from StEWI](https://github.com/USEPA/standardizedinventories/blob/e36902c3d1b23423381cd43c3bc8ac016a8219bb/env_sec_ctxt.yaml)).
-Using the conda terminal to cd to this new directory, run `conda env create -f env_sec_ctxt.yaml`.
-Once the optional geospatial depdencies and esupy (as a [StEWI dependency](https://github.com/USEPA/standardizedinventories/blob/master/setup.py)) are installed this way, urban/rural secondary context assignment should occur automatically when running StEWI code.
+Install [Anaconda](https://www.anaconda.com/products/distribution) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) on your machine. Then create a new project directory and insert a copy of env_sec_ctxt.yaml (obtained [from StEWI](https://github.com/USEPA/standardizedinventories/blob/master/env_sec_ctxt.yaml)).
+Using the conda terminal, cd to this new directory and run `conda env create -f env_sec_ctxt.yaml`.
+
+Once the optional geospatial depdencies and esupy (obtained as a [StEWI dependency](https://github.com/USEPA/standardizedinventories/blob/master/setup.py)) are installed this way, urban/rural and release height secondary context assignment should occur automatically when generating inventory files in StEWI.
 
 ### pip, macOS & Ubuntu
-The versions of Fiona and GDAL necessary to support GeoPandas are available for macOS and Ubuntu machines up through Python 3.9, but wheels for 3.10 are still [forthcoming](https://github.com/geopandas/geopandas/issues/2212)).
-Shapely also [has yet to publish](https://github.com/shapely/shapely/issues/1215) Python 3.10 wheels, and so Python versions 3.7-3.9 are recommended.
+The versions of Fiona and GDAL necessary to support GeoPandas are available for macOS and Ubuntu machines up through Python 3.9, but their wheels for 3.10 are still [forthcoming](https://github.com/geopandas/geopandas/issues/2212).
+Shapely also [has yet to publish](https://github.com/shapely/shapely/issues/1215) Python 3.10 wheels, so only Python versions 3.7-3.9 are supported.
 
 
 ## Disclaimer
