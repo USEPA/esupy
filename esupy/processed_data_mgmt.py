@@ -59,18 +59,21 @@ def download_from_remote(file_meta, paths, **kwargs):
     :param paths: instance of class Paths
     :param kwargs: option to include 'subdirectory_dict', a dictionary that
          directs local data storage location based on extension
+    :return: bool False if download fails, True if successful
     """
+    status = False
     base_url = paths.remote_path + file_meta.tool + '/'
     if file_meta.category != '':
         base_url = base_url + file_meta.category + '/'
     files = get_most_recent_from_index(file_meta, paths)
-    if files == []:
+    if files is None:
         log.info('%s not found in %s', file_meta.name_data, base_url)
     else:
         for f in files:
             url = base_url + f
             r = make_url_request(url)
             if r is not None:
+                status = True
                 # set subdirectory
                 subdirectory = file_meta.category
                 # if there is a dictionary with specific subdirectories
@@ -87,6 +90,7 @@ def download_from_remote(file_meta, paths, **kwargs):
                 log.info('%s saved to %s', f, folder)
                 with open(file, 'wb') as f:
                     f.write(r.content)
+    return status
 
 
 def remove_extra_files(file_meta, paths):
@@ -125,35 +129,23 @@ def find_file(meta, paths):
     :param paths: populated instance of class Paths
     :return: str with the file path if found, otherwise an empty string
     """
-    path = os.path.realpath(paths.local_path + "/" + meta.category)
+    path = os.path.realpath(f'{paths.local_path}/{meta.category}')
     if os.path.exists(path):
-        search_words = meta.name_data
-        matches = []
-        fs = {}
-        for f in os.scandir(path):
-            name = f.name
-            # get file creation time
-            st = f.stat().st_ctime
-            fs[name] = st
-            matches = []
-            for k in fs.keys():
-                if re.search(search_words, k):
-                    if re.search(meta.ext, k, re.IGNORECASE):
-                        matches.append(k)
-        if len(matches) == 0:
-            f = ""
-        else:
-            # Filter the dict by matches
-            r = {k: v for k, v in fs.items() if k in matches}
-            # Sort the dict by matches, return a list
-            # r = {k:v for k,v in sorted(r.items(),
-            #      key=lambda item: item[1], reverse=True)}
-            rl = [k for k, v
-                  in sorted(r.items(), key=lambda item: item[1], reverse=True)]
-            f = os.path.realpath(path + "/" + rl[0])
-    else:
-        f = ""
-    return f
+        with os.scandir(path) as files:
+            # List all file satisfying the criteria in the passed metadata
+            matches = [f for f in files
+                       if meta.name_data in f.name
+                       and meta.ext.lower() in f.name.lower()]
+            # Sort files in reverse order by ctime (creation time on Windows,
+            # last metadata modification time on Unix)
+            sorted_matches = sorted(matches,
+                                    key=lambda f: f.stat().st_ctime,
+                                    reverse=True)
+        # Return the path to the most recent matching file, or '' if no
+        # match exists.
+        if sorted_matches:
+            return os.path.realpath(f'{path}/{sorted_matches[0].name}')
+    return ''
 
 
 def get_most_recent_from_index(file_meta, paths):
@@ -234,8 +226,17 @@ def read_into_df(file):
         df = pd.read_parquet(file)
     elif ext == ".csv":
         df = pd.read_csv(file)
+    elif ext == ".rds":
+        try:
+            import rpy2.robjects as robjects
+            from rpy2.robjects import pandas2ri
+        except ImportError:
+            log.error("Must install rpy2 to read .rds files")
+        pandas2ri.activate()
+        readRDS = robjects.r['readRDS']
+        df = readRDS(file)
     else:
-        log.error("No reader specified for extension"+ext)
+        log.error(f"No reader specified for extension {ext}")
     return df
 
 # def define_metafile(datafile,paths):
