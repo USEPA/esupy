@@ -166,8 +166,8 @@ def main(df, year, *cmpts):
     elif 'urb' in cmpts and not has_geo_pkgs:
         log.info('Geospatial dependencies of esupy.context_secondary missing; '
                   'unable to assign urban/rural compartment.\n See esupy README.md.')
-        return df
-    if 'urb' in cmpts:
+
+    if 'urb' in cmpts and has_geo_pkgs:
         df = urb_intersect(df, year)
     if 'rh' in cmpts:
         df = classify_height(df)
