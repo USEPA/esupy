@@ -19,8 +19,9 @@ try:
     import shapely as sh
     has_geo_pkgs = True
 except ImportError:
-    log.info('GeoPandas and/or Shapely were not successfully imported;\n'
-             'see esupy/README.md for install instructions.')
+    log.info('GeoPandas and/or Shapely were not successfully imported,\n'
+             'so esupy.context_secondary is unable to assign an urban/rural '
+             'compartment.\n See esupy/README.md for install instructions.')
     has_geo_pkgs = False
 
 datapath = Path(__file__).parent/'data_census'
@@ -163,10 +164,6 @@ def main(df, year, *cmpts):
     if 'urb' not in cmpts and 'rh' not in cmpts:
         log.error('Please pass one or more valid *cmpts string codes: {urb, rh}')
         return df
-    elif 'urb' in cmpts and not has_geo_pkgs:
-        log.info('Geospatial dependencies of esupy.context_secondary missing; '
-                  'unable to assign urban/rural compartment.\n See esupy README.md.')
-
     if 'urb' in cmpts and has_geo_pkgs:
         df = urb_intersect(df, year)
     if 'rh' in cmpts:
