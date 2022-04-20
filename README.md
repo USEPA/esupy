@@ -2,6 +2,20 @@
 
 A Python library supporting Python-based tools in USEPA's tool ecosystem. The package itself provides no unique output.
 
+
+## Installation Instructions for Optional Geospatial Packages
+
+### conda, all platforms (recommended)
+Install [Anaconda](https://www.anaconda.com/products/distribution) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) on your machine. Then create a new project directory and insert a copy of env_sec_ctxt.yaml (obtained [from StEWI](https://github.com/USEPA/standardizedinventories/blob/master/env_sec_ctxt.yaml)).
+Using the conda terminal, cd to this new directory and run `conda env create -f env_sec_ctxt.yaml`.
+
+Once the optional geospatial depdencies and esupy (obtained as a [StEWI dependency](https://github.com/USEPA/standardizedinventories/blob/master/setup.py)) are installed this way, urban/rural and release height secondary context assignment should occur automatically when generating inventory files in StEWI.
+
+### pip, macOS & Ubuntu
+The versions of Fiona and GDAL necessary to support GeoPandas are available for macOS and Ubuntu machines up through Python 3.9, but their wheels for 3.10 are still [forthcoming](https://github.com/geopandas/geopandas/issues/2212).
+Shapely also [has yet to publish](https://github.com/shapely/shapely/issues/1215) Python 3.10 wheels, so only Python versions 3.7-3.9 are supported.
+
+
 ## Disclaimer
 
 The United States Environmental Protection Agency (EPA) GitHub project code is provided on an "as is" basis
