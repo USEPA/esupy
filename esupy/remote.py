@@ -29,9 +29,11 @@ def make_url_request(url, *, set_cookies=False, confirm_gdrive=False):
                 response = s.get(url, params={'confirm': 't'})
             response.raise_for_status()
         except requests.exceptions.ConnectionError:
-            log.error("URL Connection Error for %s", url)
+            log.error(f"URL Connection Error for {url}")
+            raise
         except requests.exceptions.HTTPError:
             log.error('Error in URL request!')
+            raise
     return response
 
 
