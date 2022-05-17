@@ -8,6 +8,7 @@ import logging as log
 import requests
 import requests_ftp
 from urllib.parse import urlsplit
+import time
 
 
 def make_url_request(url, *, set_cookies=False, confirm_gdrive=False):
@@ -19,21 +20,27 @@ def make_url_request(url, *, set_cookies=False, confirm_gdrive=False):
     session = (requests_ftp.ftp.FTPSession if urlsplit(url).scheme == 'ftp'
                else requests.Session)
     with session() as s:
-        try:
-            # The session object s preserves cookies, so the second s.get()
-            # will have the cookies that came from the first s.get()
-            response = s.get(url)
-            if set_cookies:
+        for attempt in range(3):
+            try:
+                # The session object s preserves cookies, so the second s.get()
+                # will have the cookies that came from the first s.get()
                 response = s.get(url)
-            if confirm_gdrive:
-                response = s.get(url, params={'confirm': 't'})
-            response.raise_for_status()
-        except requests.exceptions.ConnectionError:
-            log.error(f"URL Connection Error for {url}")
-            raise
-        except requests.exceptions.HTTPError:
-            log.error('Error in URL request!')
-            raise
+                if set_cookies:
+                    response = s.get(url)
+                if confirm_gdrive:
+                    response = s.get(url, params={'confirm': 't'})
+                response.raise_for_status()
+                break
+            except requests.exceptions.ConnectionError as err:
+                log.debug(err)
+                time.sleep(5)
+                continue
+            except requests.exceptions.HTTPError as err:
+                log.debug(err)
+                time.sleep(5)
+                continue
+        else:
+            raise requests.exceptions.RequestException
     return response
 
 
