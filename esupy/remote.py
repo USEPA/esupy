@@ -8,32 +8,41 @@ import logging as log
 import requests
 import requests_ftp
 from urllib.parse import urlsplit
+import time
 
 
-def make_url_request(url, *, set_cookies=False, confirm_gdrive=False):
+def make_url_request(url, *, set_cookies=False, confirm_gdrive=False,
+                     max_attempts=3):
     """
     Makes http request using requests library
     :param url: URL to query
+    :param set_cookies:
+    :param confirm_gdrive:
+    :param max_attempts: int number of retries allowed in query
     :return: request Object
     """
     session = (requests_ftp.ftp.FTPSession if urlsplit(url).scheme == 'ftp'
                else requests.Session)
     with session() as s:
-        try:
-            # The session object s preserves cookies, so the second s.get()
-            # will have the cookies that came from the first s.get()
-            response = s.get(url)
-            if set_cookies:
+        for attempt in range(max_attempts):
+            try:
+                # The session object s preserves cookies, so the second s.get()
+                # will have the cookies that came from the first s.get()
                 response = s.get(url)
-            if confirm_gdrive:
-                response = s.get(url, params={'confirm': 't'})
-            response.raise_for_status()
-        except requests.exceptions.ConnectionError:
-            log.error(f"URL Connection Error for {url}")
-            raise
-        except requests.exceptions.HTTPError:
-            log.error('Error in URL request!')
-            raise
+                if set_cookies:
+                    response = s.get(url)
+                if confirm_gdrive:
+                    response = s.get(url, params={'confirm': 't'})
+                response.raise_for_status()
+                break
+            except requests.exceptions.RequestException as err:
+                if attempt < max_attempts - 1:
+                    log.debug(err)
+                    time.sleep(5)
+                    continue
+                else:
+                    log.exception(err)
+                    raise
     return response
 
 
