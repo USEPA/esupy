@@ -11,16 +11,20 @@ from urllib.parse import urlsplit
 import time
 
 
-def make_url_request(url, *, set_cookies=False, confirm_gdrive=False):
+def make_url_request(url, *, set_cookies=False, confirm_gdrive=False,
+                     max_attempts=3):
     """
     Makes http request using requests library
     :param url: URL to query
+    :param set_cookies:
+    :param confirm_gdrive:
+    :param max_attempts: int number of retries allowed in query
     :return: request Object
     """
     session = (requests_ftp.ftp.FTPSession if urlsplit(url).scheme == 'ftp'
                else requests.Session)
     with session() as s:
-        for attempt in range(3):
+        for attempt in range(max_attempts):
             try:
                 # The session object s preserves cookies, so the second s.get()
                 # will have the cookies that came from the first s.get()
@@ -40,7 +44,8 @@ def make_url_request(url, *, set_cookies=False, confirm_gdrive=False):
                 time.sleep(5)
                 continue
         else:
-            raise requests.exceptions.RequestException
+            log.exception(err)
+            raise
     return response
 
 
