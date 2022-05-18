@@ -35,17 +35,14 @@ def make_url_request(url, *, set_cookies=False, confirm_gdrive=False,
                     response = s.get(url, params={'confirm': 't'})
                 response.raise_for_status()
                 break
-            except requests.exceptions.ConnectionError as err:
-                log.debug(err)
-                time.sleep(5)
-                continue
-            except requests.exceptions.HTTPError as err:
-                log.debug(err)
-                time.sleep(5)
-                continue
-        else:
-            log.exception(err)
-            raise
+            except requests.exceptions.RequestException as err:
+                if attempt < max_attempts - 1:
+                    log.debug(err)
+                    time.sleep(5)
+                    continue
+                else:
+                    log.exception(err)
+                    raise
     return response
 
 
