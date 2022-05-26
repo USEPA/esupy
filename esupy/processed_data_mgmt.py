@@ -8,10 +8,8 @@ local directories
 import logging as log
 import os
 import pandas as pd
-import re
 import json
 import appdirs
-import xml.etree.ElementTree as ET
 from esupy.remote import make_url_request
 from esupy.util import strip_file_extension
 
@@ -208,8 +206,9 @@ def write_df_to_file(df, paths, meta):
         else:
             log.error('Failed to save ' + file + '. '
                       + "Meta data lacks 'ext' property")
-    except Exception:
-        log.error('Failed to save ' + file + '.')
+    except Exception as e:
+        log.exception('Failed to save ' + file + '.')
+        raise e
 
 
 def read_into_df(file):
@@ -307,28 +306,21 @@ def get_data_commons_index(file_meta, paths):
     :param category: str of the category to search e.g. 'flowsa/FlowByActivity'
     :return: dataframe with 'date' and 'file_name' as fields
     """
-    index_url = '?prefix='
     subdirectory = file_meta.tool + '/'
     if file_meta.category != '':
         subdirectory = subdirectory + file_meta.category + '/'
-    url = paths.remote_path + index_url + subdirectory
-    listing = make_url_request(url)
-    # Code to convert XML to pd df courtesy of
-    # https://stackabuse.com/reading-and-writing-xml-files-in-python-with-panda
-    contents = ET.XML(listing.text)
-    data = []
-    cols = []
-    for i, child in enumerate(contents):
-        data.append([subchild.text for subchild in child])
-        cols.append(child.tag)
-    df = pd.DataFrame(data)
-    df.dropna(inplace=True)
-    try:
-        # only get first two columns and rename them name and last modified
-        df = df[[0, 1]]
-    except KeyError:
-        # no data found at url
-        return None
+
+    import boto3
+    from botocore.handlers import disable_signing
+    s3 = boto3.Session().resource('s3')
+    s3.meta.client.meta.events.register('choose-signer.s3.*', disable_signing)
+
+    bucket = s3.Bucket('edap-ord-data-commons')
+    d = {}
+    for item in bucket.objects.filter(Prefix=subdirectory):
+        d[item.key] = item.last_modified
+    df = pd.DataFrame.from_dict(d, orient='index').reset_index()
+
     df.columns = ['file_name', 'last_modified']
     # Reformat the date to a pd datetime
     df['date'] = pd.to_datetime(df['last_modified'],
