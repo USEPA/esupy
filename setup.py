@@ -11,6 +11,7 @@ setup(
                       'pandas>=1.1.0',
                       'requests_ftp>=0.3.1',
                       'pyarrow>=4.0.0',
+                      'pyyaml>=5.3',
                       'numpy>=1.20.1',
                       ],
     extras_require={"urban_rural": ['geopandas>=0.9.0; platform_system!="Windows"',
