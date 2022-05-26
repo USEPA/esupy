@@ -10,6 +10,8 @@ import os
 import pandas as pd
 import json
 import appdirs
+import boto3
+from botocore.handlers import disable_signing
 from esupy.remote import make_url_request
 from esupy.util import strip_file_extension
 
@@ -310,8 +312,6 @@ def get_data_commons_index(file_meta, paths):
     if file_meta.category != '':
         subdirectory = subdirectory + file_meta.category + '/'
 
-    import boto3
-    from botocore.handlers import disable_signing
     s3 = boto3.Session().resource('s3')
     s3.meta.client.meta.events.register('choose-signer.s3.*', disable_signing)
 
