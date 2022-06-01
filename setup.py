@@ -13,6 +13,7 @@ setup(
                       'pyarrow>=4.0.0',
                       'pyyaml>=5.3',
                       'numpy>=1.20.1',
+                      'boto3>=1.23.0',
                       ],
     extras_require={"urban_rural": ['geopandas>=0.9.0; platform_system!="Windows"',
                                     'shapely>=1.7.1; platform_system!="Windows"']},
