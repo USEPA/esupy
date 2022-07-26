@@ -7,8 +7,9 @@ Functions to facilitate flow mapping from fedelemflowlist and material flow list
 import pandas as pd
 import logging as log
 
-def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows = False,
-                       field_dict = None, ignore_source_name = False):
+
+def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows=False,
+                       field_dict=None, ignore_source_name=False, **_):
     """
     Maps a dataframe using a flow mapping file from fedelemflowlist or
     materialflowlist.
@@ -51,31 +52,40 @@ def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows = False,
                       "TargetFlowContext",
                       "TargetUnit",
                       "TargetFlowUUID"]
-    
-    if flow_type == 'ELEMENTARY_FLOW':
-        try:
-            import fedelemflowlist as fedefl
-            mapping = fedefl.get_flowmapping(source)
-        except ImportError:
-            log.warning('Error importing fedelemflowlist, install fedelemflowlist '
-                        'to apply flow mapping to elementary flows: '
-                        'https://github.com/USEPA/Federal-LCA-Commons-Elementary-Flow-List/wiki/GitHub-Contributors#install-for-users')
-            return None
+
+    # load mapping file if specified in the method yaml
+    mapping_file = _.get('designated_mapping_file')
+    if mapping_file is not None:
+        mapping = pd.read_csv(source)
     else:
-        try:
-            import materialflowlist as mfl
-            mapping = mfl.get_flowmapping(source)
-        except ImportError:
-            log.warning('Error importing materialflowlist, install materialflowlist '
-                        'to apply flow mapping to waste and technosphere flows: '
-                        'https://github.com/USEPA/materialflowlist/wiki')
-            return None
+        if flow_type == 'ELEMENTARY_FLOW':
+            try:
+                import fedelemflowlist as fedefl
+                mapping = fedefl.get_flowmapping(source)
+            except ImportError:
+                log.warning('Error importing fedelemflowlist, install '
+                            'fedelemflowlist to apply flow mapping to elementary '
+                            'flows: https://github.com/USEPA/Federal-LCA-Commons-'
+                            'Elementary-Flow-List/wiki/GitHub-Contributors#install'
+                            '-for-users')
+                return None
+        else:
+            try:
+                import materialflowlist as mfl
+                mapping = mfl.get_flowmapping(source)
+            except ImportError:
+                log.warning('Error importing materialflowlist, install '
+                            'materialflowlist to apply flow mapping to waste and '
+                            'technosphere flows: '
+                            'https://github.com/USEPA/materialflowlist/wiki')
+                return None
     if len(mapping) == 0:
         # mapping not found
         return None
     
     mapping = mapping[mapping_fields]    
-    mapping[['ConversionFactor']] = mapping[['ConversionFactor']].fillna(value=1)
+    mapping[['ConversionFactor']] = mapping[['ConversionFactor']].fillna(
+        value=1)
     if keep_unmapped_rows is False:
         merge_type = 'inner'
     else:
