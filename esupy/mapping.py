@@ -36,12 +36,12 @@ def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows=False,
 
     if field_dict is None:
         # Default field dictionary for mapping
-        field_dict = {'SourceName':'SourceName',
-                      'FlowableName':'Flowable',
-                      'FlowableUnit':'Unit',
-                      'FlowableContext':'Context',
-                      'FlowableQuantity':'FlowAmount',
-                      'UUID':'FlowUUID'}
+        field_dict = {'SourceName': 'SourceName',
+                      'FlowableName': 'Flowable',
+                      'FlowableUnit': 'Unit',
+                      'FlowableContext': 'Context',
+                      'FlowableQuantity': 'FlowAmount',
+                      'UUID': 'FlowUUID'}
 
     mapping_fields = ["SourceListName",
                       "SourceFlowName",
@@ -54,7 +54,7 @@ def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows=False,
                       "TargetFlowUUID"]
 
     # load mapping file if specified in the method yaml
-    mapping_file = _.get('designated_mapping_file')
+    mapping_file = _.get('material_crosswalk')
     if mapping_file is not None:
         mapping = pd.read_csv(source)
     else:
