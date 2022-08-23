@@ -56,7 +56,7 @@ def apply_flow_mapping(df, source, flow_type, keep_unmapped_rows=False,
     # load mapping file if specified in the method yaml
     mapping_file = _.get('material_crosswalk')
     if mapping_file is not None:
-        mapping = pd.read_csv(source)
+        mapping = pd.read_csv(mapping_file)
     else:
         if flow_type == 'ELEMENTARY_FLOW':
             try:
