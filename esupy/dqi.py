@@ -64,8 +64,15 @@ def adjust_dqi_scores(df, source_series, indicator, bound_to_dqi=None):
     source_series = pd.to_numeric(source_series, errors = 'coerce')
     if (len(source_series) != len(df)):
         print('check length')
-    df[indicator] = np.minimum((df[indicator] + apply_dqi_to_series(
-        source_series, indicator, bound_to_dqi) - 1), 5)
+    df[indicator] = (
+        np.maximum(
+            np.minimum(
+                (df[indicator]
+                 + apply_dqi_to_series(
+                    source_series, indicator, bound_to_dqi)
+                 - 1),
+            5), # Sets maximum value to 5
+        1)) # Sets minimum value to 1
     return df
 
 def _lookup_score_with_bound_key(raw_score, bound_to_dqi):
