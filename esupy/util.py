@@ -7,6 +7,7 @@ Simple utility functions for reuse in tools
 import inspect
 import os
 import subprocess
+import uuid
 
 supported_ext = ["parquet", "csv"]
 
@@ -51,3 +52,22 @@ def get_git_hash(length='short'):
         except:
             pass
     return git_hash
+
+
+def as_path(*args: str) -> str:
+    """Converts strings to lowercase path-like string
+    Take variable order of string inputs
+    :param args: variable-length of strings
+    :return: string
+    """
+    return "/".join([x.strip().lower() for x in map(str, args)])
+
+
+def make_uuid(*args: str) -> str:
+    """
+    Generic wrapper of uuid.uuid3 method for uuid generation
+    :param args: variable list of strings
+    :return: string uuid
+    """
+    path = as_path(*args)
+    return str(uuid.uuid3(uuid.NAMESPACE_OID, path))

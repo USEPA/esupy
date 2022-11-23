@@ -44,6 +44,7 @@ def load_preprocessed_output(file_meta, paths):
     """
     f = find_file(file_meta, paths)
     if os.path.exists(f):
+        log.info(f'Returning {f}')
         df = read_into_df(f)
         return df
     else:
@@ -134,7 +135,7 @@ def find_file(meta, paths):
         with os.scandir(path) as files:
             # List all file satisfying the criteria in the passed metadata
             matches = [f for f in files
-                       if meta.name_data in f.name
+                       if f.name.startswith(meta.name_data)
                        and meta.ext.lower() in f.name.lower()]
             # Sort files in reverse order by ctime (creation time on Windows,
             # last metadata modification time on Unix)
