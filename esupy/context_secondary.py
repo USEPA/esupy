@@ -24,7 +24,8 @@ except ImportError:
              'compartment.\n See esupy/README.md for install instructions.')
     has_geo_pkgs = False
 
-datapath = Path(__file__).parent/'data_census'
+# dict of data-year: URL pairs to obtain shapefiles
+shp_urls = Path(__file__).parent / 'data_census' / 'census_uac_urls.yaml'
 
 
 def classify_height(df):
@@ -67,18 +68,18 @@ def urb_intersect(df_pt, year):
     df_pt = pd.DataFrame(gdf_pt.drop(columns=['geometry','urban']))
     return df_pt
 
-def get_census_shp(year):
+def get_census_shp(year, urls=shp_urls):
     """
-    Read in shapefile as gpd geodataframe.
-    Refer to data_census/README.md for explanation of encoding errors
-    thrown by gpd.read_file() for pre-2015 SHPs
-    :param datapath: pathlib Path pointing to shapefile dir
+    Read in shapefile as gpd geodataframe. Refer to esupy/data_census/README.md
+    for explanation gpd.read_file() encoding errors for pre-2015 SHPs.
+    :param year: int, data year
+    :param urls: pathlib.Path, filepath of YAML containing shapefile URLs
     :param filename: file name string with extension
     """
-    with open(datapath / 'census_uac_urls.yaml', 'r') as f:
+    with urls.open() as f:
         uac_url = yaml.safe_load(f)
     try:
-        log.info(f'Retrieving {year} UAC shapefile from url:\n{uac_url[year]}')
+        log.info(f'Retrieving {year} UAC shapefile from URL:\n{uac_url[year]}')
         if year < 2015:
             log.info('Before 2015, expect series of GeoPandas WARNINGs that '
                      'utf-8 codec fails for certain strings.\n See Text Encoding '
