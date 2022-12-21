@@ -46,7 +46,7 @@ def load_preprocessed_output(file_meta, paths):
         doesn't exist
     """
     f = find_file(file_meta, paths)
-    if f is not None and f.exists():
+    if isinstance(f, Path):
         log.info(f'Returning {f}')
         df = read_into_df(f)
         return df
@@ -129,8 +129,8 @@ def remove_extra_files(file_meta, paths):
 
 def find_file(meta, paths):
     """
-    Searches for file within path.local_path based on file metadata, if
-    metadata matches, returns most recently created file name
+    Searches for file within path.local_path based on file metadata; if
+    metadata matches, returns most recently created file path object
     :param meta: populated instance of class FileMeta
     :param paths: populated instance of class Paths
     :return: str with the file path if found, otherwise an empty string
@@ -152,7 +152,7 @@ def find_file(meta, paths):
         # match exists.
         if sorted_matches:
             return path / sorted_matches[0].name
-    return
+    return None
 
 
 def get_most_recent_from_index(file_meta, paths):
@@ -275,16 +275,12 @@ def read_source_metadata(paths, meta, force_JSON=False):
         meta.ext = 'json'
         path = find_file(meta, paths)
     else:
-        path = find_file(meta, paths)
-        # remove the extension from the file and add _metadata.json
-        path = strip_file_extension(path)
-        path = Path(f'{path}_metadata.json')
+        p = find_file(meta, paths)
+        path = p.parent / f'{p.stem}_metadata.json'
     try:
-        with open(path, 'r') as file:
-            file_contents = file.read()
-            metadata = json.loads(file_contents)
-            return metadata
-    except FileNotFoundError:
+        metadata = json.loads(path.read_text())
+        return metadata
+    except (FileNotFoundError, AttributeError):
         log.warning(f'metadata not found for {meta.name_data}')
         return None
 
