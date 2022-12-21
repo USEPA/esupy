@@ -278,7 +278,7 @@ def read_source_metadata(paths, meta, force_JSON=False):
         path = find_file(meta, paths)
         # remove the extension from the file and add _metadata.json
         path = strip_file_extension(path)
-        path = f'{path}_metadata.json'
+        path = Path(f'{path}_metadata.json')
     try:
         with open(path, 'r') as file:
             file_contents = file.read()
