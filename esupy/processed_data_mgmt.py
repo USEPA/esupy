@@ -46,7 +46,7 @@ def load_preprocessed_output(file_meta, paths):
         doesn't exist
     """
     f = find_file(file_meta, paths)
-    if os.path.exists(f):
+    if f is not None and f.exists():
         log.info(f'Returning {f}')
         df = read_into_df(f)
         return df
@@ -151,8 +151,8 @@ def find_file(meta, paths):
         # Return the path to the most recent matching file, or '' if no
         # match exists.
         if sorted_matches:
-            return os.path.realpath(f'{str(path)}/{sorted_matches[0].name}')
-    return ''
+            return path / sorted_matches[0].name
+    return
 
 
 def get_most_recent_from_index(file_meta, paths):
