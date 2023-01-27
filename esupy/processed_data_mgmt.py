@@ -19,7 +19,7 @@ from esupy.util import strip_file_extension
 class Paths:
     def __init__(self):
         self.local_path = appdirs.user_data_dir()
-        self.remote_path = 'https://edap-ord-data-commons.s3.amazonaws.com/'
+        self.remote_path = 'https://dmap-data-commons-ord.s3.amazonaws.com/'
 
 
 class FileMeta:
@@ -316,7 +316,7 @@ def get_data_commons_index(file_meta, paths):
     s3 = boto3.Session().resource('s3')
     s3.meta.client.meta.events.register('choose-signer.s3.*', disable_signing)
 
-    bucket = s3.Bucket('edap-ord-data-commons')
+    bucket = s3.Bucket('dmap-data-commons-ord')
     d = {}
     for item in bucket.objects.filter(Prefix=subdirectory):
         d[item.key] = item.last_modified
