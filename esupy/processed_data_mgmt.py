@@ -171,7 +171,7 @@ def get_most_recent_from_index(file_meta, paths):
     if len(df_ext) == 0:
         return None
     else:
-        df_ext = (df_ext[df_ext['version'] == df_ext['version'].max()]
+        df_ext = (df_ext.sort_values(by=["version", "date"], ascending=False)
                   .reset_index(drop=True))
         # select first file name in list, extract the file version and git
         # hash, return list of files that include version/hash (to include
