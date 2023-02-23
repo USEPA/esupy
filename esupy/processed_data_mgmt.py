@@ -89,10 +89,9 @@ def download_from_remote(file_meta, paths, **kwargs):
                                           + '/' + subdirectory)
                 file = folder + "/" + f
                 create_paths_if_missing(file)
-                log.info('%s downloaded from '
-                         'https://dmap-data-commons-ord.s3.amazonaws.com/'
-                         'index.html?prefix=flowsa/ and saved to %s',
-                         f, folder)
+                log.info('%s downloaded from %sindex.html?prefix=%s/%s and '
+                         'saved to %s', f, paths.remote_path,
+                         file_meta.tool, file_meta.category, folder)
                 with open(file, 'wb') as f:
                     f.write(r.content)
     return status
