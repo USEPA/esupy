@@ -69,7 +69,7 @@ def download_from_remote(file_meta, paths, **kwargs):
         base_url = base_url + file_meta.category + '/'
     files = get_most_recent_from_index(file_meta, paths)
     if files is None:
-        log.info('%s not found in %s', file_meta.name_data, base_url)
+        log.info(f'{file_meta.name_data} not found in {base_url}')
     else:
         for f in files:
             url = base_url + f
@@ -89,9 +89,10 @@ def download_from_remote(file_meta, paths, **kwargs):
                                           + '/' + subdirectory)
                 file = folder + "/" + f
                 create_paths_if_missing(file)
-                log.info('%s downloaded from %sindex.html?prefix=%s/%s and '
-                         'saved to %s', f, paths.remote_path,
-                         file_meta.tool, file_meta.category, folder)
+                log.info(f'{f} downloaded from'
+                         f' {paths.remote_path}index.html?prefix='
+                         f'{file_meta.tool}/{file_meta.category} and saved to '
+                         f'{folder}')
                 with open(file, 'wb') as f:
                     f.write(r.content)
     return status
