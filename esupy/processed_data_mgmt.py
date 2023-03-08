@@ -19,7 +19,7 @@ from esupy.util import strip_file_extension
 class Paths:
     def __init__(self):
         self.local_path = appdirs.user_data_dir()
-        self.remote_path = 'https://edap-ord-data-commons.s3.amazonaws.com/'
+        self.remote_path = 'https://dmap-data-commons-ord.s3.amazonaws.com/'
 
 
 class FileMeta:
@@ -54,8 +54,9 @@ def load_preprocessed_output(file_meta, paths):
 def download_from_remote(file_meta, paths, **kwargs):
     """
     Downloads one or more files from remote and stores locally based on the
-    most recent instance of that file. All files that share name_data, version,
-    and hash will be downloaded together.
+    most recent instance of that file. Most recent is determined by max
+    version number. All files that share name_data, version, and hash will
+    be downloaded together.
     :param file_meta: populated instance of class FileMeta
     :param paths: instance of class Paths
     :param kwargs: option to include 'subdirectory_dict', a dictionary that
@@ -68,7 +69,7 @@ def download_from_remote(file_meta, paths, **kwargs):
         base_url = base_url + file_meta.category + '/'
     files = get_most_recent_from_index(file_meta, paths)
     if files is None:
-        log.info('%s not found in %s', file_meta.name_data, base_url)
+        log.info(f'{file_meta.name_data} not found in {base_url}')
     else:
         for f in files:
             url = base_url + f
@@ -88,7 +89,10 @@ def download_from_remote(file_meta, paths, **kwargs):
                                           + '/' + subdirectory)
                 file = folder + "/" + f
                 create_paths_if_missing(file)
-                log.info('%s saved to %s', f, folder)
+                log.info(f'{f} downloaded from'
+                         f' {paths.remote_path}index.html?prefix='
+                         f'{file_meta.tool}/{file_meta.category} and saved to '
+                         f'{folder}')
                 with open(file, 'wb') as f:
                     f.write(r.content)
     return status
@@ -168,7 +172,7 @@ def get_most_recent_from_index(file_meta, paths):
     if len(df_ext) == 0:
         return None
     else:
-        df_ext = (df_ext.sort_values(by='date', ascending=False)
+        df_ext = (df_ext.sort_values(by=["version", "date"], ascending=False)
                   .reset_index(drop=True))
         # select first file name in list, extract the file version and git
         # hash, return list of files that include version/hash (to include
@@ -302,7 +306,8 @@ def create_paths_if_missing(file):
 
 
 def get_data_commons_index(file_meta, paths):
-    """Returns a dataframe of files available on data commmons for the
+    """
+    Returns a dataframe of files available on data commmons for the
     particular category
     :param file_meta: instance of class FileMeta
     :param paths: instance of class Path
@@ -316,7 +321,7 @@ def get_data_commons_index(file_meta, paths):
     s3 = boto3.Session().resource('s3')
     s3.meta.client.meta.events.register('choose-signer.s3.*', disable_signing)
 
-    bucket = s3.Bucket('edap-ord-data-commons')
+    bucket = s3.Bucket('dmap-data-commons-ord')
     d = {}
     for item in bucket.objects.filter(Prefix=subdirectory):
         d[item.key] = item.last_modified
