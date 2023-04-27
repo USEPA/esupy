@@ -22,7 +22,7 @@ from esupy.util import strip_file_extension
 class Paths:
     def __init__(self):
         self.local_path = Path(appdirs.user_data_dir())
-        self.remote_path = 'https://edap-ord-data-commons.s3.amazonaws.com/'
+        self.remote_path = 'https://dmap-data-commons-ord.s3.amazonaws.com/'
     # TODO: rename as DataPaths {.local, .remote}
 
 class FileMeta:
@@ -57,8 +57,9 @@ def load_preprocessed_output(file_meta, paths):
 def download_from_remote(file_meta, paths, **kwargs):
     """
     Downloads one or more files from remote and stores locally based on the
-    most recent instance of that file. All files that share name_data, version,
-    and hash will be downloaded together.
+    most recent instance of that file. Most recent is determined by max
+    version number. All files that share name_data, version, and hash will
+    be downloaded together.
     :param file_meta: populated instance of class FileMeta
     :param paths: instance of class Paths
     :param kwargs: option to include 'subdir_dict', a dictionary that
@@ -96,7 +97,10 @@ def download_from_remote(file_meta, paths, **kwargs):
                 file = folder / fname
                 with file.open('wb') as fi:
                     fi.write(r.content)
-                log.info(f'{fname} saved to {folder}')
+                log.info(f'{fname} downloaded from '
+                         f'{paths.remote_path}index.html?prefix='
+                         f'{file_meta.tool}/{file_meta.category} and saved to '
+                         f'{folder}')
     return status
 
 
@@ -174,7 +178,7 @@ def get_most_recent_from_index(file_meta, paths):
     if len(df_ext) == 0:
         return None
     else:
-        df_ext = (df_ext.sort_values(by='date', ascending=False)
+        df_ext = (df_ext.sort_values(by=["version", "date"], ascending=False)
                   .reset_index(drop=True))
         # select first file name in list, extract the file version and git
         # hash, return list of files that include version/hash (to include
@@ -296,7 +300,8 @@ def mkdir_if_missing(folder):
 
 
 def get_data_commons_index(file_meta, paths):
-    """Returns a dataframe of files available on data commmons for the
+    """
+    Returns a dataframe of files available on data commmons for the
     particular category
     :param file_meta: instance of class FileMeta
     :param paths: instance of class Path
@@ -310,7 +315,7 @@ def get_data_commons_index(file_meta, paths):
     s3 = boto3.Session().resource('s3')
     s3.meta.client.meta.events.register('choose-signer.s3.*', disable_signing)
 
-    bucket = s3.Bucket('edap-ord-data-commons')
+    bucket = s3.Bucket('dmap-data-commons-ord')
     d = {}
     for item in bucket.objects.filter(Prefix=subdir):
         d[item.key] = item.last_modified
