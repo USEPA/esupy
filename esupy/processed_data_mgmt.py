@@ -280,7 +280,7 @@ def read_source_metadata(paths, meta, force_JSON=False):
         path = find_file(meta, paths)
     else:
         p = find_file(meta, paths)
-        path = p.parent / f'{p.stem}_metadata.json'
+        path = p.parent / f'{p.stem}_metadata.json' if p else None
     try:
         metadata = json.loads(path.read_text())
         return metadata
