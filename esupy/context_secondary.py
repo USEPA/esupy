@@ -34,11 +34,14 @@ def classify_height(df):
     :param df: pandas dataframe, with <schema_name> column
     :return: pandas dataframe with new column of cmpt_rh labels
     """
+    if 'StackHeight' not in df.columns:
+        log.warning('StackHeight not found in df, assigning as unspecified')
+        return df.assign(cmpt_rh='unspecified')
     m_to_ft = 3.28  # feet per meter
     cond = [(df['StackHeight'].isna()),
             (df['StackHeight'] < 4*m_to_ft),    # ~13 ft
             (df['StackHeight'] < 25*m_to_ft),   # ~82 ft
-            (df['StackHeight'] < 150*m_to_ft),# ~492 ft
+            (df['StackHeight'] < 150*m_to_ft),  # ~492 ft
             (df['StackHeight'] >= 150*m_to_ft)]
     cmpt = ['unspecified', 'ground', 'low', 'high', 'very high']
     df['cmpt_rh'] = np.select(cond, cmpt)
@@ -136,7 +139,7 @@ def multipoly_agg(gdf):
         log.error('GeoDataFrame invalid; contains non-polygon geometries')
         return None
     # multipolygons are collections of polygons; extract & concatenate into list
-    mp = [poly for multipoly in gdf_mp['geometry'] for poly in multipoly]
+    mp = [poly for multipoly in gdf_mp['geometry'] for poly in multipoly.geoms]
     p = list(gdf_p['geometry']) # concatenate single polygons into a list
     multipoly = sh.geometry.MultiPolygon(mp + p)  # join lists & convert to single mp
     return multipoly
