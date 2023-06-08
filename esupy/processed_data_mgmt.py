@@ -5,22 +5,25 @@
 Functions to manage querying, retrieving and storing of preprocessed data in
 local directories
 """
+import json
 import logging as log
 import os
-import pandas as pd
-import json
+from pathlib import Path
+
 import appdirs
 import boto3
+import pandas as pd
 from botocore.handlers import disable_signing
+
 from esupy.remote import make_url_request
 from esupy.util import strip_file_extension
 
 
 class Paths:
     def __init__(self):
-        self.local_path = appdirs.user_data_dir()
+        self.local_path = Path(appdirs.user_data_dir())
         self.remote_path = 'https://dmap-data-commons-ord.s3.amazonaws.com/'
-
+    # TODO: rename as DataPaths {.local, .remote}
 
 class FileMeta:
     def __init__(self):
@@ -43,7 +46,7 @@ def load_preprocessed_output(file_meta, paths):
         doesn't exist
     """
     f = find_file(file_meta, paths)
-    if os.path.exists(f):
+    if isinstance(f, Path):
         log.info(f'Returning {f}')
         df = read_into_df(f)
         return df
@@ -59,7 +62,7 @@ def download_from_remote(file_meta, paths, **kwargs):
     be downloaded together.
     :param file_meta: populated instance of class FileMeta
     :param paths: instance of class Paths
-    :param kwargs: option to include 'subdirectory_dict', a dictionary that
+    :param kwargs: option to include 'subdir_dict', a dictionary that
          directs local data storage location based on extension
     :return: bool False if download fails, True if successful
     """
@@ -67,34 +70,37 @@ def download_from_remote(file_meta, paths, **kwargs):
     base_url = paths.remote_path + file_meta.tool + '/'
     if file_meta.category != '':
         base_url = base_url + file_meta.category + '/'
+    ## TODO: re-implement URL handling via f-strings and/or urllib
+    # base_url = f'{paths.remote_path}/{file_meta.tool}'
+    # if not file_meta.category == '':
+    #     base_url = f'{base_url}/{file_meta.category}'
     files = get_most_recent_from_index(file_meta, paths)
     if files is None:
         log.info(f'{file_meta.name_data} not found in {base_url}')
     else:
-        for f in files:
-            url = base_url + f
+        for fname in files:
+            url = base_url + fname
             r = make_url_request(url)
             if r is not None:
                 status = True
                 # set subdirectory
-                subdirectory = file_meta.category
+                subdir = file_meta.category
                 # if there is a dictionary with specific subdirectories
                 # based on end of filename, modify the subdirectory
                 if kwargs != {}:
-                    if 'subdirectory_dict' in kwargs:
-                        for k, v in kwargs['subdirectory_dict'].items():
-                            if f.endswith(k):
-                                subdirectory = v
-                folder = os.path.realpath(paths.local_path
-                                          + '/' + subdirectory)
-                file = folder + "/" + f
-                create_paths_if_missing(file)
-                log.info(f'{f} downloaded from'
-                         f' {paths.remote_path}index.html?prefix='
+                    if 'subdir_dict' in kwargs:
+                        for k, v in kwargs['subdir_dict'].items():
+                            if fname.endswith(k):
+                                subdir = v
+                folder = paths.local_path / subdir
+                mkdir_if_missing(folder)
+                file = folder / fname
+                with file.open('wb') as fi:
+                    fi.write(r.content)
+                log.info(f'{fname} downloaded from '
+                         f'{paths.remote_path}index.html?prefix='
                          f'{file_meta.tool}/{file_meta.category} and saved to '
                          f'{folder}')
-                with open(file, 'wb') as f:
-                    f.write(r.content)
     return status
 
 
@@ -105,38 +111,38 @@ def remove_extra_files(file_meta, paths):
     :param file_meta: populated instance of class FileMeta
     :param paths: populated instance of class Paths
     """
-    path = os.path.realpath(paths.local_path + "/" + file_meta.category)
-    if not(os.path.exists(path)):
-        return
+    path = paths.local_path / file_meta.category
     fs = {}
-    file_name = file_meta.name_data + "_v"
-    for f in os.scandir(path):
+    file_name = file_meta.name_data + '_v'
+    for f in os.scandir(str(path)):
         name = f.name
-        # get file creation time
+        # get file creation time (Windows) or most recent metadata change time (Unix)
+        # TODO: refactor w/ recursive glob: path.rglob('*')
         st = f.stat().st_ctime
         if name.startswith(file_name):
             fs[name] = st
     keep = max(fs, key=fs.get)
-    log.debug("found %i files", len(fs))
+    log.debug(f'found {len(fs)} files')
     count = 0
     for f in fs.keys():
         if f is not keep:
-            os.remove(path + "/" + f)
+            os.remove(path + '/' + f)
             count += 1
-    log.debug("removed %i files", count)
+    log.debug(f'removed {count} files')
 
 
 def find_file(meta, paths):
     """
-    Searches for file within path.local_path based on file metadata, if
-    metadata matches, returns most recently created file name
+    Searches for file within path.local_path based on file metadata; if
+    metadata matches, returns most recently created file path object
     :param meta: populated instance of class FileMeta
     :param paths: populated instance of class Paths
     :return: str with the file path if found, otherwise an empty string
     """
-    path = os.path.realpath(f'{paths.local_path}/{meta.category}')
-    if os.path.exists(path):
-        with os.scandir(path) as files:
+    path = paths.local_path / meta.category
+    if path.exists():
+        # TODO: refactor w/ recursive glob: path.rglob('*')
+        with os.scandir(str(path)) as files:
             # List all file satisfying the criteria in the passed metadata
             matches = [f for f in files
                        if f.name.startswith(meta.name_data)
@@ -149,8 +155,8 @@ def find_file(meta, paths):
         # Return the path to the most recent matching file, or '' if no
         # match exists.
         if sorted_matches:
-            return os.path.realpath(f'{path}/{sorted_matches[0].name}')
-    return ''
+            return path / sorted_matches[0].name
+    return None
 
 
 def get_most_recent_from_index(file_meta, paths):
@@ -178,8 +184,8 @@ def get_most_recent_from_index(file_meta, paths):
         # hash, return list of files that include version/hash (to include
         # metadata and log files)
         recent_file = df_ext['file_name'][0]
-        vh = "_".join(strip_file_extension(recent_file).replace(
-            f'{file_meta.name_data}_', '').split("_", 2)[:2])
+        vh = '_'.join(strip_file_extension(recent_file).replace(
+            f'{file_meta.name_data}_', '').split('_', 2)[:2])
         if vh != '':
             df_sub = [string for string in df['file_name'] if vh in string]
         else:
@@ -196,59 +202,51 @@ def write_df_to_file(df, paths, meta):
     :param meta: populated instance of class FileMeta
     :return: None
     """
-    folder = os.path.realpath(paths.local_path + "/" + meta.category)
-    file = folder + "/" + meta.name_data + "_v" + meta.tool_version
+    folder = paths.local_path / meta.category
+    fname = f'{meta.name_data}_v{meta.tool_version}'
     if meta.git_hash is not None:
-        file = file + "_" + meta.git_hash
+        fname = f'{fname}_{meta.git_hash}'
     try:
-        create_paths_if_missing(file)
+        mkdir_if_missing(folder)
         if meta.ext == "parquet":
-            file = file + ".parquet"
-            file = os.path.realpath(file)
-            df.to_parquet(file)
+            df.to_parquet(folder / f'{fname}.parquet')
         elif meta.ext == "csv":
-            file = file + ".csv"
-            file = os.path.realpath(file)
-            df.to_csv(file, index=False)
+            df.to_csv(folder / f'{fname}.csv', index=False)
         else:
-            log.error('Failed to save ' + file + '. '
-                      + "Meta data lacks 'ext' property")
+            log.error(f'Failed to save {fname}; metadata lacks "ext" property')
     except Exception as e:
-        log.exception('Failed to save ' + file + '.')
+        log.exception('Failed to save {fname}')
         raise e
 
 
-def read_into_df(file):
+def read_into_df(fpath):
     """
     Based on a file extension use the appropriate function to read in file
-    :param file: str with a file path
+    :param fpath: pathlib.Path, file path object
     :return: a pandas dataframe with the file data if extension is handled,
         else an error
     """
-    df = pd.DataFrame()
-    name, ext = os.path.splitext(file)
-    ext = ext.lower()
-    if ext == ".parquet":
-        df = pd.read_parquet(file)
-    elif ext == ".csv":
-        df = pd.read_csv(file)
-    elif ext == ".rds":
+    ext = fpath.suffix.lower()
+    if ext == '.parquet':
+        df = pd.read_parquet(fpath)
+    elif ext == '.csv':
+        df = pd.read_csv(fpath)
+    elif ext == '.rds':
         try:
             import rpy2.robjects as robjects
             from rpy2.robjects import pandas2ri
         except ImportError:
-            log.error("Must install rpy2 to read .rds files")
+            log.error('Must install rpy2 to read .rds files')
         pandas2ri.activate()
         readRDS = robjects.r['readRDS']
-        df = readRDS(file)
+        df = readRDS(fpath)
     else:
-        log.error(f"No reader specified for extension {ext}")
+        log.error(f'No reader specified for extension {ext}')
     return df
 
 # def define_metafile(datafile,paths):
 #    data = strip_file_extension(datafile)
-#    metafile = os.path.realpath(paths.local_path + "/" + data
-#                                + '_metadata.json')
+#    metafile = paths.local_path / f'{data}_metadata.json'
 #    return metafile
 
 
@@ -258,13 +256,14 @@ def write_metadata_to_file(paths, meta):
     :param paths: populated instance of class Paths
     :param meta: populated instance of class FileMeta
     """
-    folder = os.path.realpath(paths.local_path + "/" + meta.category)
-    file = folder + "/" + meta.name_data + "_v" + meta.tool_version
+    folder = paths.local_path / meta.category
+    fname = f'{meta.name_data}_v{meta.tool_version}'
     if meta.git_hash is not None:
-        file = file + "_" + meta.git_hash
-    file = file + '_metadata.json'
-    with open(file, 'w') as file:
-        file.write(json.dumps(meta.__dict__, indent=4))
+        fname = f'{fname}_{meta.git_hash}'
+    fname = f'{fname}_metadata.json'
+    file = folder / fname
+    with file.open('w') as fi:
+        fi.write(json.dumps(meta.__dict__, indent=4))
 
 
 def read_source_metadata(paths, meta, force_JSON=False):
@@ -280,29 +279,24 @@ def read_source_metadata(paths, meta, force_JSON=False):
         meta.ext = 'json'
         path = find_file(meta, paths)
     else:
-        path = find_file(meta, paths)
-        # remove the extension from the file and add _metadata.json
-        path = strip_file_extension(path)
-        path = f'{path}_metadata.json'
+        p = find_file(meta, paths)
+        path = p.parent / f'{p.stem}_metadata.json' if p else None
     try:
-        with open(path, 'r') as file:
-            file_contents = file.read()
-            metadata = json.loads(file_contents)
-            return metadata
-    except FileNotFoundError:
-        log.warning("metadata not found for %s", meta.name_data)
+        metadata = json.loads(path.read_text())
+        return metadata
+    except (FileNotFoundError, AttributeError):
+        log.warning(f'metadata not found for {meta.name_data}')
         return None
 
 
-def create_paths_if_missing(file):
+def mkdir_if_missing(folder):
     """
-    Creates paths is missing. Paths are created recursivley by os.makedirs
-    :param file:
-    :return:
+    Via pathlib, create a new dir (and parents) if not in existence
+    https://docs.python.org/3/library/pathlib.html#pathlib.Path.mkdir
+    :param folder: pathlib.Path, a path to a directory (not a file)
     """
-    dir = os.path.dirname(file)
-    if not os.path.exists(dir):
-        os.makedirs(dir)
+    if not folder.exists() and not folder.is_file():
+        folder.mkdir(parents=True, exist_ok=True)
 
 
 def get_data_commons_index(file_meta, paths):
@@ -314,16 +308,16 @@ def get_data_commons_index(file_meta, paths):
     :param category: str of the category to search e.g. 'flowsa/FlowByActivity'
     :return: dataframe with 'date' and 'file_name' as fields
     """
-    subdirectory = file_meta.tool + '/'
+    subdir = file_meta.tool + '/'
     if file_meta.category != '':
-        subdirectory = subdirectory + file_meta.category + '/'
+        subdir = subdir + file_meta.category + '/'
 
     s3 = boto3.Session().resource('s3')
     s3.meta.client.meta.events.register('choose-signer.s3.*', disable_signing)
 
     bucket = s3.Bucket('dmap-data-commons-ord')
     d = {}
-    for item in bucket.objects.filter(Prefix=subdirectory):
+    for item in bucket.objects.filter(Prefix=subdir):
         d[item.key] = item.last_modified
     df = pd.DataFrame.from_dict(d, orient='index').reset_index()
 
@@ -332,7 +326,7 @@ def get_data_commons_index(file_meta, paths):
     df['date'] = pd.to_datetime(df['last_modified'],
                                 format='%Y-%m-%dT%H:%M:%S')
     # Remove the category name and trailing slash from the file name
-    df['file_name'] = df['file_name'].str.replace(subdirectory, "")
+    df['file_name'] = df['file_name'].str.replace(subdir, "")
     # Reset the index and return
     df = df[['date', 'file_name']].reset_index(drop=True)
     return df
@@ -340,16 +334,16 @@ def get_data_commons_index(file_meta, paths):
 
 def parse_data_commons_index(df):
     """Parse a df from data_commons_index into separate columns"""
-    df['ext'] = df['file_name'].str.rsplit(".", n=1, expand=True)[1]
-    df['file'] = df['file_name'].str.rsplit(".", n=1, expand=True)[0]
-    df['git_hash'] = df['file'].str.rsplit("_", n=1, expand=True)[1]
+    df['ext'] = df['file_name'].str.rsplit('.', n=1, expand=True)[1]
+    df['file'] = df['file_name'].str.rsplit('.', n=1, expand=True)[0]
+    df['git_hash'] = df['file'].str.rsplit('_', n=1, expand=True)[1]
     df['git_hash'].fillna('', inplace=True)
     df.loc[df['git_hash'].map(len) != 7, 'git_hash'] = ''
     try:
         df['version'] = (df['file']
-                         .str.split("_v", n=1, expand=True)[1]
-                         .str.split("_", expand=True)[0])
-        df['name'] = df['file'].str.split("_v", n=1, expand=True)[0]
+                         .str.split('_v', n=1, expand=True)[1]
+                         .str.split('_', expand=True)[0])
+        df['name'] = df['file'].str.split('_v', n=1, expand=True)[0]
     except KeyError:
         df['version'] = ''
         df['name'] = df['file']

@@ -6,7 +6,7 @@ import esupy.processed_data_mgmt as es_dt
 def test_data_commons_access():
     """Confirms succesful access to and download from data commons files"""
     path = es_dt.Paths()
-    path.local_path = path.local_path + '/flowsa'
+    path.local_path = path.local_path / 'flowsa'
     meta = es_dt.FileMeta()
     meta.tool = 'flowsa'
     meta.category = 'FlowByActivity'
