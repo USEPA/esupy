@@ -215,7 +215,7 @@ def write_df_to_file(df, paths, meta):
         else:
             log.error(f'Failed to save {fname}; metadata lacks "ext" property')
     except Exception as e:
-        log.exception('Failed to save {fname}')
+        log.exception(f'Failed to save {fname}')
         raise e
 
 
