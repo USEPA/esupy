@@ -6,6 +6,7 @@ Simple utility functions for reuse in tools
 """
 import inspect
 import os
+from pathlib import Path
 import subprocess
 import uuid
 
@@ -18,7 +19,10 @@ def strip_file_extension(filename):
     :param filename: a string representing a file name; can contain path
     :return: string, filename without extension
     """
-    return filename.rsplit(".", 1)[0]
+    if isinstance(filename, str):
+        return filename.rsplit(".", 1)[0]
+    elif isinstance(filename, Path):
+        return filename.with_suffix('')
 
 
 def is_git_directory(path='.'):
