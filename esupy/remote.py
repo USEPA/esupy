@@ -28,7 +28,7 @@ def make_url_request(url, *, set_cookies=False, confirm_gdrive=False,
             try:
                 # The session object s preserves cookies, so the second s.get()
                 # will have the cookies that came from the first s.get()
-                response = s.get(url)
+                response = s.get(url, verify=False)
                 if set_cookies:
                     response = s.get(url)
                 if confirm_gdrive:
