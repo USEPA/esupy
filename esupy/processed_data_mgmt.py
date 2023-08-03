@@ -239,7 +239,8 @@ def read_into_df(fpath):
             log.error('Must install rpy2 to read .rds files')
         pandas2ri.activate()
         readRDS = robjects.r['readRDS']
-        df = readRDS(fpath)
+        df = readRDS(str(fpath))
+        # ^ readRDS can not handle Path objects
     else:
         log.error(f'No reader specified for extension {ext}')
     return df
