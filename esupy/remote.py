@@ -23,16 +23,26 @@ def make_url_request(url, *, set_cookies=False, confirm_gdrive=False,
     """
     session = (requests_ftp.ftp.FTPSession if urlsplit(url).scheme == 'ftp'
                else requests.Session)
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    # ^^ HTTP 403 Error may require specifying header
     with session() as s:
         for attempt in range(max_attempts):
             try:
                 # The session object s preserves cookies, so the second s.get()
                 # will have the cookies that came from the first s.get()
-                response = s.get(url)
+                response = s.get(url,
+                                 # verify=False, # needed sometimes for NEI Data
+                                 )
                 if set_cookies:
                     response = s.get(url)
                 if confirm_gdrive:
                     response = s.get(url, params={'confirm': 't'})
+                response.raise_for_status()
+                break
+            except requests.exceptions.HTTPError as err:
+                # ^^ HTTP 403 Error may require specifying header
+                log.debug(err)
+                response = s.get(url, headers=headers)
                 response.raise_for_status()
                 break
             except requests.exceptions.RequestException as err:
