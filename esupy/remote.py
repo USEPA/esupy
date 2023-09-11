@@ -40,6 +40,7 @@ def make_url_request(url, *, set_cookies=False, confirm_gdrive=False,
                 response.raise_for_status()
                 break
             except requests.exceptions.HTTPError as err:
+                # ^^ HTTP 403 Error may require specifying header
                 log.debug(err)
                 response = s.get(url, headers=headers)
                 response.raise_for_status()
