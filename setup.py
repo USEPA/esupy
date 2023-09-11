@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='esupy',
-    version='0.3.0',
+    version='0.3.1',
     packages=['esupy'],
     include_package_data=True,
     python_requires=">=3.7",
