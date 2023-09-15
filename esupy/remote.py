@@ -11,6 +11,9 @@ from urllib.parse import urlsplit
 import time
 
 
+headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+# ^^ HTTP 403 Error may require specifying header
+
 def make_url_request(url, *, set_cookies=False, confirm_gdrive=False,
                      max_attempts=3):
     """
@@ -23,8 +26,6 @@ def make_url_request(url, *, set_cookies=False, confirm_gdrive=False,
     """
     session = (requests_ftp.ftp.FTPSession if urlsplit(url).scheme == 'ftp'
                else requests.Session)
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
-    # ^^ HTTP 403 Error may require specifying header
     with session() as s:
         for attempt in range(max_attempts):
             try:
@@ -63,3 +64,25 @@ def make_http_request(url):
                 'esupy.remote.make_http_request() will be removed in the '
                 'future. Please modify your code accordingly.')
     return make_url_request(url)
+
+
+def url_is_alive(url):
+    """Check that a given URL is reachable.
+
+    :param url: A URL
+    :rtype: bool
+    """
+    with requests.Session() as s:
+        try:
+            response = s.get(url)
+            response.raise_for_status()
+            return True
+        except requests.exceptions.HTTPError:
+            response = s.get(url, headers=headers)
+            try:
+                response.raise_for_status()
+                return True
+            except requests.exceptions.HTTPError:
+                return False
+        except requests.exceptions.RequestException:
+            return False
