@@ -73,15 +73,14 @@ def url_is_alive(url):
     """
     with requests.Session() as s:
         try:
-            response = s.get(url)
+            response = s.get(url, headers=headers)
             response.raise_for_status()
             return True
-        except requests.exceptions.HTTPError:
-            response = s.get(url, headers=headers)
-            try:
-                response.raise_for_status()
-                return True
-            except requests.exceptions.HTTPError:
-                return False
-        except requests.exceptions.RequestException:
+        except requests.exceptions.HTTPError as err:
+            print(err)
+            return False
+        except requests.exceptions.RequestException as err:
+            print(err)
+            return False
+        else:
             return False
