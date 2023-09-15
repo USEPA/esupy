@@ -15,13 +15,14 @@ headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 # ^^ HTTP 403 Error may require specifying header
 
 def make_url_request(url, *, set_cookies=False, confirm_gdrive=False,
-                     max_attempts=3):
+                     max_attempts=3, **kwargs):
     """
     Makes http request using requests library
     :param url: URL to query
     :param set_cookies:
     :param confirm_gdrive:
     :param max_attempts: int number of retries allowed in query
+    :param kwargs: pass-through to requests.Session().get()
     :return: request Object
     """
     session = (requests_ftp.ftp.FTPSession if urlsplit(url).scheme == 'ftp'
@@ -31,9 +32,7 @@ def make_url_request(url, *, set_cookies=False, confirm_gdrive=False,
             try:
                 # The session object s preserves cookies, so the second s.get()
                 # will have the cookies that came from the first s.get()
-                response = s.get(url,
-                                 # verify=False, # needed sometimes for NEI Data
-                                 )
+                response = s.get(url, **kwargs)
                 if set_cookies:
                     response = s.get(url)
                 if confirm_gdrive:
