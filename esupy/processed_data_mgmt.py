@@ -70,10 +70,6 @@ def download_from_remote(file_meta, paths, **kwargs):
     base_url = paths.remote_path + file_meta.tool + '/'
     if file_meta.category != '':
         base_url = base_url + file_meta.category + '/'
-    ## TODO: re-implement URL handling via f-strings and/or urllib
-    # base_url = f'{paths.remote_path}/{file_meta.tool}'
-    # if not file_meta.category == '':
-    #     base_url = f'{base_url}/{file_meta.category}'
     files = get_most_recent_from_index(file_meta, paths)
     if files is None:
         log.info(f'{file_meta.name_data} not found in {base_url}')
@@ -173,7 +169,9 @@ def get_most_recent_from_index(file_meta, paths):
     if file_df is None:
         return None
     file_df = parse_data_commons_index(file_df)
-    df = file_df[file_df['name'].str.startswith(file_meta.name_data)]
+    # subset using "file_name" instead of "name" to work when a user
+    # includes a GitHub version and hash
+    df = file_df[file_df['file_name'].str.startswith(file_meta.name_data)]
     df_ext = df[df['ext'] == file_meta.ext]
     if len(df_ext) == 0:
         return None
