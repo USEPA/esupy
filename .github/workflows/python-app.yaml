@@ -51,7 +51,7 @@ jobs:
     # install package & dependencies
     - name: Install package and dependencies
       run: |
-        pip install .
+        pip install .[bib]
 
     # linting & pytest
     - name: Lint with flake8
