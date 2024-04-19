@@ -48,10 +48,13 @@ jobs:
         python -m pip install --upgrade pip setuptools wheel
         pip install pytest pytest-cov flake8
 
-    # install package & dependencies
     - name: Install package and dependencies
-      run: |
-        pip install .[bib]
+      if: ${{ python-version < 3.9 }}
+      run: pip install .
+
+    - name: Install package and dependencies
+      if: ${{ python-version >= 3.9 }}
+      run: pip install .[bib]
 
     # linting & pytest
     - name: Lint with flake8

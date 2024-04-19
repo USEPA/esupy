@@ -1,5 +1,7 @@
 """Test functions"""
 
+import pytest
+import sys
 from pathlib import Path
 
 import esupy.processed_data_mgmt as es_dt
@@ -25,6 +27,8 @@ def test_data_commons_access():
 
     assert(df1 is not None and df2 is None)
 
+
+@pytest.mark.skipif(sys.version_info < (3, 9), reason="bibliographies require python3.9 or higher")
 def test_source_generation():
     source_list = bibtex.generate_sources(
         bib_path = Path(__file__).parents[1] / 'tests' / 'test.bib',
