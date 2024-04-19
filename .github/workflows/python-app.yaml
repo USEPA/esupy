@@ -49,11 +49,11 @@ jobs:
         pip install pytest pytest-cov flake8
 
     - name: Install package and dependencies
-      if: ${{ python-version < 3.9 }}
+      if: ${{ matrix.py-version == '3.7' || matrix.py-version == '3.8' }}
       run: pip install .
 
     - name: Install package and dependencies
-      if: ${{ python-version >= 3.9 }}
+      if: ${{ !(matrix.py-version == '3.7' || matrix.py-version == '3.8') }}
       run: pip install .[bib]
 
     # linting & pytest
