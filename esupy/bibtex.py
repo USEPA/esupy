@@ -21,6 +21,9 @@ def generate_sources(bib_path: Path,
         displayed in the openLCA dashboard.
     :return: list of olca_schema.Source
     """
+    if bibids == {}:
+        log.debug("No bibids passed. No sources generated.")
+        return []
     try:
         import bibtexparser
         from bibtexparser.bparser import BibTexParser
