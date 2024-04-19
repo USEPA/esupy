@@ -336,7 +336,7 @@ def parse_data_commons_index(df):
     df['ext'] = df['file_name'].str.rsplit('.', n=1, expand=True)[1]
     df['file'] = df['file_name'].str.rsplit('.', n=1, expand=True)[0]
     df['git_hash'] = df['file'].str.rsplit('_', n=1, expand=True)[1]
-    df['git_hash'].fillna('', inplace=True)
+    df['git_hash'] = df['git_hash'].fillna('')
     df.loc[df['git_hash'].map(len) != 7, 'git_hash'] = ''
     try:
         df['version'] = (df['file']
