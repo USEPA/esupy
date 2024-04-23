@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='esupy',
-    version='0.3.2',
+    version='0.3.3',
     packages=['esupy'],
     include_package_data=True,
     python_requires=">=3.7",
@@ -16,7 +16,9 @@ setup(
                       'boto3>=1.23.0',
                       ],
     extras_require={"urban_rural": ['geopandas>=0.13.2',
-                                    'shapely>=2.0.1']},
+                                    'shapely>=2.0.1'],
+                    "bib": ['olca_schema>=0.0.11',
+                            'bibtexparser>=1.2']},
     url='http://github.com/usepa/esupy',
     license='CC0',
     author='Wesley Ingwersen',
