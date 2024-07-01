@@ -14,7 +14,8 @@ import time
 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 # ^^ HTTP 403 Error may require specifying header
 
-def make_url_request(url, *, set_cookies=False, confirm_gdrive=False,
+def make_url_request(url, *, method='GET',
+                     set_cookies=False, confirm_gdrive=False,
                      max_attempts=3, **kwargs):
     """
     Makes http request using requests library
@@ -32,17 +33,17 @@ def make_url_request(url, *, set_cookies=False, confirm_gdrive=False,
             try:
                 # The session object s preserves cookies, so the second s.get()
                 # will have the cookies that came from the first s.get()
-                response = s.get(url, **kwargs)
+                response = s.request(method, url, **kwargs)
                 if set_cookies:
-                    response = s.get(url)
+                    response = s.request(method, url)
                 if confirm_gdrive:
-                    response = s.get(url, params={'confirm': 't'})
+                    response = s.request(method, url, params={'confirm': 't'})
                 response.raise_for_status()
                 break
             except requests.exceptions.HTTPError as err:
                 # ^^ HTTP 403 Error may require specifying header
                 log.debug(err)
-                response = s.get(url, headers=headers)
+                response = s.request(method, url, headers=headers)
                 response.raise_for_status()
                 break
             except requests.exceptions.RequestException as err:
