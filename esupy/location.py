@@ -19,7 +19,9 @@ url = 'https://geography.ecoinvent.org/files'
 # https://geography.ecoinvent.org/#id12
 
 object_dict = {'states': 'states.geojson.bz2',
-               'countries': 'countries.geojson.bz2'}
+               'countries': 'countries.geojson.bz2',
+               'us_electricity': ['usa-electricity.geojson.bz2',
+                                  'electricity.geojson.bz2']}
 
 def extract_coordinates(group) -> dict:
     """creates a dictinary of locations, where the key is the location code
@@ -29,20 +31,23 @@ def extract_coordinates(group) -> dict:
     if file is None:
         print('error')
         return
-    response = make_url_request(f'{url}/{file}')
-    content = bz2.decompress(response.content)
-    data = json.loads(content)
-
-    # %% extract GeoJSON objects from the FeatureCollection
-    features = data['features']
+    if isinstance(file, str):
+        file = [file]
+    features = []
+    for f in file:
+        response = make_url_request(f'{url}/{f}')
+        content = bz2.decompress(response.content)
+        data = json.loads(content)
+        # extract GeoJSON objects from the FeatureCollection
+        features.extend(data['features'])
 
     ## need to also grab the UUID?
-    if group == 'states':
+    if group in ('states', 'us_electricity'):
         d = {f['properties']['shortname']: {'geometry': f['geometry'],
                                             'properties': f['properties']}
                      for f in features
                      if f['properties']['shortname'].startswith('US')}
-    elif group == "countries":
+    else:
         d = {f['properties']['shortname']: {'geometry': f['geometry'],
                                             'properties': f['properties']}
              for f in features}
