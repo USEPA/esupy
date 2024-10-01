@@ -12,8 +12,6 @@ from pathlib import Path
 
 from esupy.remote import make_url_request
 
-location_meta = ('https://raw.githubusercontent.com/GreenDelta/data/'
-                 'master/refdata/locations.csv')
 path = Path(__file__).parent
 
 # %% get GeoJSON
@@ -24,6 +22,9 @@ object_dict = {'states': 'states.geojson.bz2',
                'countries': 'countries.geojson.bz2'}
 
 def extract_coordinates(group) -> dict:
+    """creates a dictinary of locations, where the key is the location code
+    and the values are 'geometry': geoJSON coordinates and 'properties': dict
+    """
     file = object_dict.get(group)
     if file is None:
         print('error')
@@ -37,12 +38,21 @@ def extract_coordinates(group) -> dict:
 
     ## need to also grab the UUID?
     if group == 'states':
-        d = {f['properties']['shortname']: f['geometry']
+        d = {f['properties']['shortname']: {'geometry': f['geometry'],
+                                            'properties': f['properties']}
                      for f in features
                      if f['properties']['shortname'].startswith('US')}
     elif group == "countries":
-        d = {f['properties']['shortname']: f['geometry'] for f in features}
+        d = {f['properties']['shortname']: {'geometry': f['geometry'],
+                                            'properties': f['properties']}
+             for f in features}
     return d
+
+def olca_location_meta():
+    location_meta = ('https://raw.githubusercontent.com/GreenDelta/'
+                     'data/master/refdata/locations.csv')
+    df = pd.read_csv(location_meta)
+    return df
 
 
 def assign_state_names(df):
