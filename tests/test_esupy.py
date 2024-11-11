@@ -6,6 +6,7 @@ from pathlib import Path
 
 import esupy.processed_data_mgmt as es_dt
 import esupy.bibtex as bibtex
+import esupy.location as loc
 
 
 def test_data_commons_access():
@@ -34,3 +35,7 @@ def test_source_generation():
         bib_path = Path(__file__).parents[1] / 'tests' / 'test.bib',
         bibids = {'bare_traci_2011': 'TRACI 2.1'})
     assert(len(source_list) == 1)
+
+
+def test_locations():
+    d = loc.extract_coordinates(group='states')
