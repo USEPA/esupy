@@ -60,8 +60,17 @@ def olca_location_meta():
     return df
 
 
-def assign_state_names(df):
-    import flowsa
+def assign_state_abbrev(df):
+    """Replaces state FIPS with state abbreviations, e.g., "US-AL" in the "Location"
+    column. Also assigns "00000" to "US".
+    Requires flowsa
+    """
+    try:
+        import flowsa
+    except ImportError:
+        raise ImportError("assigning state abbreviations currently requires "
+                          "flowsa. Install via pip install "
+                          "git+https://github.com/USEPA/flowsa.git#egg=flowsa")
     f = flowsa.location.get_state_FIPS(abbrev=True).drop(columns='County')
     f['State'] = f['State'].apply(lambda x: f"US-{x}")
     fd = f.set_index('FIPS').to_dict()['State']
