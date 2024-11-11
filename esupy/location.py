@@ -82,7 +82,7 @@ def assign_state_abbrev(df):
 def read_iso_3166():
     # accessed from the ISO online browing platform
     # https://www.iso.org/obp/ui/#search
-    df = pd.read_csv(path / 'ISO_3166.csv')
+    df = pd.read_csv(path / 'data' / 'ISO_3166.csv')
     df = df.rename(columns={'English short name': 'Name',
                             'Alpha-2 code': 'ISO-2d',
                             'Alpha-3 code': 'ISO-3d'})
