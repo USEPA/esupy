@@ -44,7 +44,7 @@ def classify_height(df):
             (df['StackHeight'] < 150*m_to_ft),  # ~492 ft
             (df['StackHeight'] >= 150*m_to_ft)]
     cmpt = ['unspecified', 'ground', 'low', 'high', 'very high']
-    df['cmpt_rh'] = np.select(cond, cmpt)
+    df['cmpt_rh'] = np.select(cond, cmpt, default='unspecified')
     return df
 
 def urb_intersect(df_pt, year):
