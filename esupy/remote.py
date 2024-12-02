@@ -6,8 +6,6 @@ Functions for handling remote requests and parsing
 """
 import logging as log
 import requests
-import requests_ftp
-from urllib.parse import urlsplit
 import time
 
 
@@ -26,9 +24,7 @@ def make_url_request(url, *, method='GET',
     :param kwargs: pass-through to requests.Session().get()
     :return: request Object
     """
-    session = (requests_ftp.ftp.FTPSession if urlsplit(url).scheme == 'ftp'
-               else requests.Session)
-    with session() as s:
+    with requests.Session() as s:
         for attempt in range(max_attempts):
             try:
                 # The session object s preserves cookies, so the second s.get()

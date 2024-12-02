@@ -9,7 +9,6 @@ setup(
     install_requires=['requests>=2.22.0',
                       'appdirs>=1.4.3',
                       'pandas>=1.1.0',
-                      'requests_ftp>=0.3.1',
                       'pyarrow>=4.0.0',
                       'pyyaml>=5.3',
                       'numpy>=1.20.1',
