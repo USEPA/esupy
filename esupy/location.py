@@ -18,19 +18,20 @@ path = Path(__file__).parent
 url = 'https://geography.ecoinvent.org/files'
 # https://geography.ecoinvent.org/#id12
 
-object_dict = {'states': 'states.geojson.bz2',
-               'countries': 'countries.geojson.bz2',
-               'us_electricity': ['usa-electricity.geojson.bz2',
-                                  'electricity.geojson.bz2']}
+location_dict = {'states': 'states.geojson.bz2',
+                 'countries': 'countries.geojson.bz2',
+                 'us_electricity': ['usa-electricity.geojson.bz2',
+                                    'electricity.geojson.bz2']}
 
 def extract_coordinates(group) -> dict:
-    """creates a dictinary of locations, where the key is the location code
+    """
+    Creates a dictinary of locations, where the key is the location code
     and the values are 'geometry': geoJSON coordinates and 'properties': dict
     """
-    file = object_dict.get(group)
+    file = location_dict.get(group)
     if file is None:
-        print('error')
-        return
+        raise KeyError(f'Must select group from available '
+                       f'keys: {list(location_dict.keys())}')
     if isinstance(file, str):
         file = [file]
     features = []
@@ -61,8 +62,9 @@ def olca_location_meta():
 
 
 def assign_state_abbrev(df):
-    """Replaces state FIPS with state abbreviations, e.g., "US-AL" in the "Location"
-    column. Also assigns "00000" to "US".
+    """
+    Replaces state FIPS with state abbreviations, e.g., "US-AL" in the
+    "Location" column. Also assigns "00000" to "US".
     Requires flowsa
     """
     try:
