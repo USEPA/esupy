@@ -67,7 +67,7 @@ def urb_intersect(df_pt, year):
             (gdf_pt['urban'] == True),
             (gdf_pt['urban'] == False)]
     cmpt = ['unspecified', 'urban', 'rural']
-    gdf_pt['cmpt_urb'] = np.select(cond, cmpt)
+    gdf_pt['cmpt_urb'] = np.select(cond, cmpt, default='unspecified')
     df_pt = pd.DataFrame(gdf_pt.drop(columns=['geometry','urban']))
     return df_pt
 
