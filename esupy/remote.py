@@ -6,6 +6,7 @@ Functions for handling remote requests and parsing
 """
 import logging as log
 import requests
+import urllib
 import time
 
 
@@ -24,6 +25,7 @@ def make_url_request(url, *, method='GET',
     :param kwargs: pass-through to requests.Session().get()
     :return: request Object
     """
+    url = urllib.parse.quote(url, safe=":/")
     with requests.Session() as s:
         for attempt in range(max_attempts):
             try:
