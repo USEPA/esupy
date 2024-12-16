@@ -25,7 +25,7 @@ def make_url_request(url, *, method='GET',
     :param kwargs: pass-through to requests.Session().get()
     :return: request Object
     """
-    url = urllib.parse.quote(url, safe=":/")
+    url = url.replace("+", "%2B")
     with requests.Session() as s:
         for attempt in range(max_attempts):
             try:
