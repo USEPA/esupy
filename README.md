@@ -1,6 +1,6 @@
-# **esupy** : tool **e**co**s**ystem **u**tilities for Python
+# **esupy** : TIEM core utilities
 
-A Python library supporting Python-based tools in USEPA's tool ecosystem. The package itself provides no unique output.
+A Python library supporting Python-based tools in USEPA's [Tools for Industrial Ecology Modeling](https://www.epa.gov/land-research/tools-industrial-ecology-modeling-tiem) ecosystem. The package itself provides no unique output.
 
 
 ## Installation Instructions for Optional Geospatial Packages
