@@ -21,9 +21,19 @@ data_collection_to_dqi = {0.4: 4,
                           1: 1,
                           None: 5}
 
+# numeric scale: national = 5, state = 2, county = 1
+geographical_correlation_to_dqi = {3: 2, # national to state
+                                   4: 3, # national to county
+                                   1: 2, # state to county
+                                   0: 1, # same geo level
+                                   -3: 1, # state to national
+                                   -1: 1, # county to state
+                                   -4: 1, # county to national
+                                   }
+
 dqi_dict = {'DataReliability':None,
             'TemporalCorrelation':temporal_correlation_to_dqi,
-            'GeographicalCorrelation':None,
+            'GeographicalCorrelation':geographical_correlation_to_dqi,
             'TechnologicalCorrelation':None,
             'DataCollection':data_collection_to_dqi
             }
