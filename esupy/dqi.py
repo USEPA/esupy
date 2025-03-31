@@ -21,13 +21,15 @@ data_collection_to_dqi = {0.4: 4,
                           1: 1,
                           None: 5}
 
-# numeric scale: national = 5, state = 2, county = 1
-geographical_correlation_to_dqi = {3: 2, # national to state
-                                   4: 3, # national to county
+# numeric scale: national = 5, census region = 4, census division = 3, state = 2, county = 1
+geographical_correlation_to_dqi = {4: 3, # national to county
+                                   3: 2, # national to state
+                                   2: 3, # national to census division
                                    1: 2, # state to county
                                    0: 1, # same geo level
-                                   -3: 1, # state to national
                                    -1: 1, # county to state
+                                   -2: 1, # county to census division
+                                   -3: 1, # state to national
                                    -4: 1, # county to national
                                    }
 
