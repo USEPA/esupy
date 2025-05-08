@@ -8,6 +8,8 @@ Functions for processing and reporting life cycle data quality indicators
 import pandas as pd
 import numpy as np
 
+# note: when building dqi lookup dictionaries, list data in ascending order
+# for _lookup_score_with_bound_key() to run properly
 
 temporal_correlation_to_dqi = {3: 1,
                                6: 2,
@@ -22,15 +24,15 @@ data_collection_to_dqi = {0.4: 4,
                           None: 5}
 
 # numeric scale: national = 5, census region = 4, census division = 3, state = 2, county = 1
-geographical_correlation_to_dqi = {4: 3, # national to county
-                                   3: 2, # national to state
-                                   2: 3, # national to census division
-                                   1: 2, # state to county
-                                   0: 1, # same geo level
-                                   -1: 1, # county to state
-                                   -2: 1, # county to census division
+geographical_correlation_to_dqi = {-4: 1, # county to national
                                    -3: 1, # state to national
-                                   -4: 1, # county to national
+                                   -2: 1, # county to census division
+                                   -1: 1, # county to state
+                                   0: 1, # same geo level
+                                   1: 2, # state to county
+                                   2: 3, # national to census division
+                                   3: 2, # national to state
+                                   4: 3, # national to county
                                    }
 
 dqi_dict = {'DataReliability':None,
@@ -97,12 +99,22 @@ def _lookup_score_with_bound_key(raw_score, bound_to_dqi):
         breakpoints = list(bound_to_dqi.keys())
     if raw_score <= breakpoints[0]:
         score = bound_to_dqi[breakpoints[0]]
-    elif (raw_score > breakpoints[0]) & (raw_score <= breakpoints[1]):
+    elif (raw_score > breakpoints[0]) and (raw_score <= breakpoints[1]):
         score = bound_to_dqi[breakpoints[1]]
-    elif (raw_score > breakpoints[1]) & (raw_score <= breakpoints[2]):
+    elif (raw_score > breakpoints[1]) and (raw_score <= breakpoints[2]):
         score = bound_to_dqi[breakpoints[2]]
-    elif (raw_score > breakpoints[2]) & (raw_score <= breakpoints[3]):
+    elif (raw_score > breakpoints[2]) and (raw_score <= breakpoints[3]):
         score = bound_to_dqi[breakpoints[3]]
+    elif (raw_score > breakpoints[3]) and (raw_score <= breakpoints[4]):
+        score = bound_to_dqi[breakpoints[4]]
+    elif (raw_score > breakpoints[4]) and (raw_score <= breakpoints[5]):
+        score = bound_to_dqi[breakpoints[5]]
+    elif (raw_score > breakpoints[5]) and (raw_score <= breakpoints[6]):
+        score = bound_to_dqi[breakpoints[6]]
+    elif (raw_score > breakpoints[6]) and (raw_score <= breakpoints[7]):
+        score = bound_to_dqi[breakpoints[7]]
+    elif (raw_score > breakpoints[7]) and (raw_score <= breakpoints[8]):
+        score = bound_to_dqi[breakpoints[8]]
     else:
         score = bound_to_dqi[None]
     return score
