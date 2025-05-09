@@ -95,29 +95,23 @@ def _lookup_score_with_bound_key(raw_score, bound_to_dqi):
     """
     if bound_to_dqi is None:
         return None
+    if raw_score is None:
+        return 5
+
+    closest_key = None
+    for key in bound_to_dqi:
+      if key is None:
+          return 5
+      elif key > raw_score:
+        closest_key = key
+        break
+      else:
+          next
+
+    if closest_key is not None:
+      return bound_to_dqi[closest_key]
     else:
-        breakpoints = list(bound_to_dqi.keys())
-    if raw_score <= breakpoints[0]:
-        score = bound_to_dqi[breakpoints[0]]
-    elif (raw_score > breakpoints[0]) and (raw_score <= breakpoints[1]):
-        score = bound_to_dqi[breakpoints[1]]
-    elif (raw_score > breakpoints[1]) and (raw_score <= breakpoints[2]):
-        score = bound_to_dqi[breakpoints[2]]
-    elif (raw_score > breakpoints[2]) and (raw_score <= breakpoints[3]):
-        score = bound_to_dqi[breakpoints[3]]
-    elif (raw_score > breakpoints[3]) and (raw_score <= breakpoints[4]):
-        score = bound_to_dqi[breakpoints[4]]
-    elif (raw_score > breakpoints[4]) and (raw_score <= breakpoints[5]):
-        score = bound_to_dqi[breakpoints[5]]
-    elif (raw_score > breakpoints[5]) and (raw_score <= breakpoints[6]):
-        score = bound_to_dqi[breakpoints[6]]
-    elif (raw_score > breakpoints[6]) and (raw_score <= breakpoints[7]):
-        score = bound_to_dqi[breakpoints[7]]
-    elif (raw_score > breakpoints[7]) and (raw_score <= breakpoints[8]):
-        score = bound_to_dqi[breakpoints[8]]
-    else:
-        score = bound_to_dqi[None]
-    return score
+      return None
 
 def _return_bound_key(indicator):
     if indicator in dqi_dict.keys():
@@ -153,3 +147,12 @@ def get_weighted_average(df, data_col, weight_col, agg_cols):
                        where=g['_weight_where_notnull'].sum() != 0)
     del df['_data_times_weight'], df['_weight_where_notnull']
     return wt_avg
+
+if __name__ == "__main__":
+    years = list(range(2008, 2024)) + [None]
+    df = pd.DataFrame({'Year': years})
+    df['TemporalCorrelation'] = apply_dqi_to_series(2023-df['Year'], 'TemporalCorrelation')
+
+    df2 = pd.DataFrame({'Year': years})
+    df2['Year_diff'] = 2023-df2['Year']
+    df2 = apply_dqi_to_field(df2, 'Year_diff', 'TemporalCorrelation')
