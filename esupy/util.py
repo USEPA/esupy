@@ -90,7 +90,6 @@ def return_pkg_version(MODULEPATH, packagename):
         tags = subprocess.check_output(
             ["git", "describe", "--tags", "--always", "--match", "v[0-9]*"],
             cwd=MODULEPATH).decode().strip()
-        print(tags)
         pkg_version = tags.split("-", 1)[0].replace('v', "")
     except subprocess.CalledProcessError:
         pkg_version = version(packagename)
