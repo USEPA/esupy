@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import subprocess
 import uuid
+from importlib.metadata import version
 
 supported_ext = ["parquet", "csv"]
 
