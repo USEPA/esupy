@@ -64,7 +64,7 @@ def olca_location_meta():
 def assign_state_abbrev(df):
     """
     Replaces state FIPS with state abbreviations, e.g., "US-AL" in the
-    "Location" column. Also assigns "00000" to "US".
+    "Location" column. Also assigns "US" where FIPS is "00000".
     Requires flowsa
     """
     try:
