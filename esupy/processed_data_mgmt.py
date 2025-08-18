@@ -319,7 +319,9 @@ def get_data_commons_index(file_meta, paths):
     for item in bucket.objects.filter(Prefix=subdir):
         d[item.key] = item.last_modified
     df = pd.DataFrame.from_dict(d, orient='index').reset_index()
-
+    if len(df)==0:
+        log.error(f'Error accessing {subdir}. No data returned')
+        return None
     df.columns = ['file_name', 'last_modified']
     # Reformat the date to a pd datetime
     df['date'] = pd.to_datetime(df['last_modified'],

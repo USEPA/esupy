@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import subprocess
 import uuid
+from importlib.metadata import version
 
 supported_ext = ["parquet", "csv"]
 
@@ -75,3 +76,23 @@ def make_uuid(*args: str) -> str:
     """
     path = as_path(*args)
     return str(uuid.uuid3(uuid.NAMESPACE_OID, path))
+
+
+def return_pkg_version(MODULEPATH, packagename):
+    """
+    Return package version
+    :param MODULEPATH: str, package path
+    :param packagename: str, such as "flowsa"
+    """
+    # return version with git describe
+    try:
+        # set path to package repository, necessary if running method files
+        # outside the package repo
+        tags = subprocess.check_output(
+            ["git", "describe", "--tags", "--always", "--match", "v[0-9]*"],
+            cwd=MODULEPATH).decode().strip()
+        pkg_version = tags.split("-", 1)[0].replace('v', "")
+    except subprocess.CalledProcessError:
+        pkg_version = version(packagename)
+
+    return pkg_version

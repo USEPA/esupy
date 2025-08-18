@@ -8,6 +8,8 @@ Functions for processing and reporting life cycle data quality indicators
 import pandas as pd
 import numpy as np
 
+# note: when building dqi lookup dictionaries, list data in ascending order
+# for _lookup_score_with_bound_key() to run properly
 
 temporal_correlation_to_dqi = {3: 1,
                                6: 2,
@@ -21,9 +23,21 @@ data_collection_to_dqi = {0.4: 4,
                           1: 1,
                           None: 5}
 
+# numeric scale: national = 5, census region = 4, census division = 3, state = 2, county = 1
+geographical_correlation_to_dqi = {-4: 1, # county to national
+                                   -3: 1, # state to national
+                                   -2: 1, # county to census division
+                                   -1: 1, # county to state
+                                   0: 1, # same geo level
+                                   1: 2, # state to county
+                                   2: 3, # national to census division
+                                   3: 2, # national to state
+                                   4: 3, # national to county
+                                   }
+
 dqi_dict = {'DataReliability':None,
             'TemporalCorrelation':temporal_correlation_to_dqi,
-            'GeographicalCorrelation':None,
+            'GeographicalCorrelation':geographical_correlation_to_dqi,
             'TechnologicalCorrelation':None,
             'DataCollection':data_collection_to_dqi
             }
@@ -81,19 +95,23 @@ def _lookup_score_with_bound_key(raw_score, bound_to_dqi):
     """
     if bound_to_dqi is None:
         return None
+    if raw_score is None:
+        return 5
+
+    closest_key = None
+    for key in bound_to_dqi:
+      if key is None:
+          return 5
+      elif key > raw_score:
+        closest_key = key
+        break
+      else:
+          next
+
+    if closest_key is not None:
+      return bound_to_dqi[closest_key]
     else:
-        breakpoints = list(bound_to_dqi.keys())
-    if raw_score <= breakpoints[0]:
-        score = bound_to_dqi[breakpoints[0]]
-    elif (raw_score > breakpoints[0]) & (raw_score <= breakpoints[1]):
-        score = bound_to_dqi[breakpoints[1]]
-    elif (raw_score > breakpoints[1]) & (raw_score <= breakpoints[2]):
-        score = bound_to_dqi[breakpoints[2]]
-    elif (raw_score > breakpoints[2]) & (raw_score <= breakpoints[3]):
-        score = bound_to_dqi[breakpoints[3]]
-    else:
-        score = bound_to_dqi[None]
-    return score
+      return None
 
 def _return_bound_key(indicator):
     if indicator in dqi_dict.keys():
@@ -129,3 +147,12 @@ def get_weighted_average(df, data_col, weight_col, agg_cols):
                        where=g['_weight_where_notnull'].sum() != 0)
     del df['_data_times_weight'], df['_weight_where_notnull']
     return wt_avg
+
+if __name__ == "__main__":
+    years = list(range(2008, 2024)) + [None]
+    df = pd.DataFrame({'Year': years})
+    df['TemporalCorrelation'] = apply_dqi_to_series(2023-df['Year'], 'TemporalCorrelation')
+
+    df2 = pd.DataFrame({'Year': years})
+    df2['Year_diff'] = 2023-df2['Year']
+    df2 = apply_dqi_to_field(df2, 'Year_diff', 'TemporalCorrelation')
